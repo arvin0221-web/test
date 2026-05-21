@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Pure-Code FX Matrix 20</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #020208;
+            color: #fff;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            width: 90%;
+            max-width: 1000px;
+            background: rgba(10, 10, 25, 0.75);
+            padding: 15px;
+            border-radius: 16px;
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+        .title {
+            text-align: center;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            color: #00ffca;
+            text-shadow: 0 0 8px rgba(0, 255, 202, 0.5);
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+        @media(max-width: 768px) { .btn-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media(max-width: 480px) { .btn-grid { grid-template-columns: repeat(2, 1fr); } }
+        
+        .fx-btn {
+            background: rgba(20, 20, 45, 0.8);
+            border: 1px solid #323264;
+            color: #ccc;
+            padding: 8px 4px;
+            font-size: 11px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .fx-btn:hover {
+            background: rgba(0, 255, 202, 0.15);
+            border-color: #00ffca;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 255, 202, 0.3);
+            transform: translateY(-1px);
+        }
+        .fx-btn.active {
+            background: #00ffca;
+            border-color: #00ffca;
+            color: #020208;
+            font-weight: bold;
+            box-shadow: 0 0 15px #00ffca;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="ui-container">
+    <div class="title">✨ PURE CODE ADVANCED FX MATRIX ✨</div>
+    <div class="btn-grid" id="btnGrid"></div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let w = canvas.width = window.innerWidth;
+let h = canvas.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+});
+
+// 特效狀態管理
+let currentFX = '無';
+let fxTimer = 0;
+let fxDuration = 240; // 4秒 (60fps * 4)
+let objects = [];
+let frameCount = 0;
+let globalAlphaControl = 0.1; // 用於控制Motion Blur殘影
+
+// 20種特效定義
+const fxList = [
+    { id: 1, name: '超新星爆裂' }, { id: 2, name: '量子矩陣流' }, { id: 3, name: '時空扭曲黑洞' }, { id: 4, name: '賽博朋克霓虹格線' },
+    { id: 5, name: '聖光魔法陣' }, { id: 6, name: '高電壓等離子閃電' }, { id: 7, name: '奈米機械風暴' }, { id: 8, name: '復古像素方塊溶解' },
+    { id: 9, name: '宇宙極光帷幕' }, { id: 10, name: '超時空曲速推進' }, { id: 11, name: '鳳凰涅槃火雨' }, { id: 12, name: '冰霜新星凍結' },
+    { id: 13, name: '數位矩陣代碼雨' }, { id: 14, name: '超維度幾何超立方' }, { id: 15, name: '聲波頻譜干涉' }, { id: 16, name: '重力奇點碎裂' },
+    { id: 17, name: '暗物質迷霧' }, { id: 18, name: '雷射光束干涉網' }, { id: 19, name: '生物螢光水母流' }, { id: 20, name: '終極宇宙大爆炸' }
+];
+
+// 動態生成UI按鈕
+const btnGrid = document.getElementById('btnGrid');
+fxList.forEach(fx => {
+    const btn = document.createElement('button');
+    btn.className = 'fx-btn';
+    btn.innerText = `${fx.id}. ${fx.name}`;
+    btn.onclick = () => triggerFX(fx.name, btn);
+    btnGrid.appendChild(btn);
+});
+
+function triggerFX(name, btnElement) {
+    currentFX = name;
+    fxTimer = fxDuration;
+    objects = []; // 清空舊特效物件
+    
+    document.querySelectorAll('.fx-btn').forEach(b => b.classList.remove('active'));
+    if(btnElement) btnElement.classList.add('active');
+    
+    // 初始化特定特效所需的資料結構
+    initFX(name);
+}
+
+// 各特效初始化邏輯
+function initFX(name) {
+    const cx = w / 2, cy = h / 2;
+    switch(name) {
+        case '超新星爆裂':
+            for(let i=0; i<300; i++) {
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 12 + 4;
+                objects.push({x: cx, y: cy, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, h: Math.random()*40, size: Math.random()*4+2});
+            }
+            break;
+        case '量子矩陣流':
+            for(let i=0; i<150; i++) {
+                objects.push({x: Math.random()*w, y: Math.random()*h, r: Math.random()*4+1, speed: Math.random()*3+1, targetIdx: -1});
+            }
+            break;
+        case '時空扭曲黑洞':
+            for(let i=0; i<400; i++) {
+                let angle = Math.random() * Math.PI * 2;
+                let dist = Math.random() * Math.max(w,h) * 0.5 + 50;
+                objects.push({angle: angle, dist: dist, speed: (Math.random()*0.02 + 0.01), size: Math.random()*2+1, h: 200+Math.random()*60});
+            }
+            break;
+        case '賽博朋克霓虹格線':
+            for(let i=0; i<40; i++) objects.push({val: Math.random()*w, speed: Math.random()*4+2, dir: Math.random() > 0.5 ? 1 : -1});
+            break;
+        case '聖光魔法陣':
+            objects.push({rot: 0, scale: 0, maxScale: Math.min(w,h)*0.35, alpha: 0});
+            break;
+        case '高電壓等離子閃電':
+            // 每幀動態計算，不需預設大量物件
+            break;
+        case '奈米機械風暴':
+            for(let i=0; i<120; i++) {
+                objects.push({x: Math.random()*w, y: Math.random()*h, vx: (Math.random()-0.5)*8, vy: (Math.random()-0.5)*8, size: Math.random()*3+2});
+            }
+            break;
+        case '復古像素方塊溶解':
+            let rows = 15; let cols = 25;
+            let tw = w / cols; let th = h / rows;
+            for(let r=0; r<rows; r++) {
+                for(let c=0; c<cols; c++) {
+                    objects.push({x: c*tw, y: r*th, w: tw, h: th, delay: Math.random()*60, alpha: 1, size: tw});
+                }
+            }
+            break;
+        case '宇宙極光帷幕':
+            for(let i=0; i<6; i++) objects.push({y: h*0.3 + Math.random()*h*0.4, seed: Math.random()*100, hue: 120 + Math.random()*60});
+            break;
+        case '超時空曲速推進':
+            for(let i=0; i<300; i++) {
+                objects.push({x: Math.random()*w - cx, y: Math.random()*h - cy, z: Math.random()*w});
+            }
+            break;
+        case '鳳凰涅槃火雨':
+            for(let i=0; i<150; i++) {
+                objects.push({x: Math.random()*w, y: -20, vy: Math.random()*5+5, vx: Math.random()*2-1, size: Math.random()*4+2, h: Math.random()*30});
+            }
+            break;
+        case '冰霜新星凍結':
+            for(let i=0; i<200; i++) {
+                let angle = Math.random() * Math.PI * 2;
+                objects.push({angle: angle, dist: 0, speed: Math.random()*6+4, len: Math.random()*20+10, branch: Math.random()>0.7});
+            }
+            break;
+        case '數位矩陣代碼雨':
+            let columns = Math.floor(w / 16);
+            for(let i=0; i<columns; i++) objects.push({x: i*16, y: Math.random()*-h, speed: Math.random()*5+5});
+            break;
+        case '超維度幾何超立方':
+            // 數學公式即時運算
+            break;
+        case '聲波頻譜干涉':
+            for(let i=0; i<60; i++) objects.push({phase: Math.random()*Math.PI*2, amp: Math.random()*50+20, freq: Math.random()*0.05+0.01});
+            break;
+        case '重力奇點碎裂':
+            for(let i=0; i<180; i++) {
+                objects.push({x: Math.random()*w, y: Math.random()*h, vx: 0, vy: 0, mass: Math.random()*5+2, h: 220+Math.random()*40});
+            }
+            break;
+        case '暗物質迷霧':
+            for(let i=0; i<80; i++) {
+                objects.push({x: Math.random()*w, y: Math.random()*h, r: Math.random()*60+40, vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2, pulse: Math.random()*Math.PI});
+            }
+            break;
+        case '雷射光束干涉網':
+            for(let i=0; i<15; i++) objects.push({y: Math.random()*h, targetY: Math.random()*h, x: Math.random()*w, targetX: Math.random()*w});
+            break;
+        case '生物螢光水母流':
+            for(let i=0; i<8; i++) {
+                objects.push({x: Math.random()*w, y: h + 50, r: Math.random()*20+15, speed: Math.random()*1+0.5, pulse: Math.random()*10});
+            }
+            break;
+        case '終極宇宙大爆炸':
+            objects.push({stage: 0, radius: 0, alpha: 1, pCount: 500, particles: []});
+            break;
+    }
+}
+
+// 主渲染迴圈
+function draw() {
+    frameCount++;
+    
+    // 控制 Motion Blur 背景殘影刷新率
+    if (currentFX === '賽博朋克霓虹格線' || currentFX === '時空扭曲黑洞' || currentFX === '超時空曲速推進') {
+        globalAlphaControl = 0.25; 
+    } else {
+        globalAlphaControl = 0.12; 
+    }
+    
+    ctx.fillStyle = `rgba(2, 2, 8, ${globalAlphaControl})`;
+    ctx.fillRect(0, 0, w, h);
+
+    if (fxTimer > 0) {
+        ctx.save();
+        renderFX(currentFX);
+        ctx.restore();
+        fxTimer--;
+        if(fxTimer <= 0) {
+            currentFX = '無';
+            document.querySelectorAll('.fx-btn').forEach(b => b.classList.remove('active'));
+        }
+    } else {
+        // 閒置狀態下的輕微背景粒子
+        ctx.fillStyle = "rgba(255,255,255,0.1)";
+        ctx.font = "14px monospace";
+        ctx.fillText("請點擊下方按鈕觸發高級代碼特效展示...", w/2 - 130, h/2);
+    }
+    
+    requestAnimationFrame(draw);
+}
+
+// 核心：20種視覺效果的代碼算法矩陣
+function renderFX(name) {
+    const cx = w / 2, cy = h / 2;
+    ctx.globalCompositeOperation = 'screen';
+
+    switch(name) {
+        case '超新星爆裂':
+            objects.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                p.vy += 0.04; // 輕微重力
+                ctx.shadowBlur = 10; ctx.shadowColor = `hsla(${p.h}, 100%, 50%, 0.8)`;
+                ctx.fillStyle = `hsla(${p.h}, 100%, 70%, ${fxTimer/fxDuration})`;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+            });
+            break;
+
+        case '量子矩陣流':
+            objects.forEach((p, idx) => {
+                p.y -= p.speed; if(p.y < 0) p.y = h;
+                // 連線演算法產生複雜網絡結構
+                for(let j = idx+1; j < objects.length; j++) {
+                    let dist = Math.hypot(p.x - objects[j].x, p.y - objects[j].y);
+                    if(dist < 90) {
+                        ctx.strokeStyle = `rgba(0, 255, 202, ${(1 - dist/90) * 0.3})`;
+                        ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(objects[j].x, objects[j].y); ctx.stroke();
+                    }
+                }
+                ctx.fillStyle = '#00ffca'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+            });
+            break;
+
+        case '時空扭曲黑洞':
+            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(cx, cy, 40, 0, Math.PI*2); ctx.fill();
+            objects.forEach(p => {
+                p.angle += p.speed;
+                p.dist -= 1.2; // 向黑洞核心塌陷
+                if(p.dist < 40) p.dist = Math.max(w,h)*0.5 + Math.random()*50;
+                let x = cx + Math.cos(p.angle) * p.dist;
+                let y = cy + Math.sin(p.angle) * p.dist;
+                ctx.fillStyle = `hsla(${p.h}, 100%, 60%, 0.8)`;
+                ctx.fillRect(x, y, p.size, p.size);
+            });
+            break;
+
+        case '賽博朋克霓虹格線':
+            ctx.lineWidth = 2;
+            objects.forEach((line, i) => {
+                line.val += line.speed * line.dir;
+                if(line.val < 0 || line.val > w) line.dir *= -1;
+                ctx.strokeStyle = i % 2 === 0 ? `rgba(255, 0, 128, 0.4)` : `rgba(0, 191, 255, 0.4)`;
+                ctx.beginPath(); ctx.moveTo(line.val, 0); ctx.lineTo(w - line.val, h); ctx.stroke();
+            });
+            break;
+
+        case '聖光魔法陣':
+            let m = objects[0];
+            if(m.scale < m.maxScale) m.scale += (m.maxScale - m.scale)*0.1;
+            m.rot += 0.01;
+            ctx.strokeStyle = `rgba(255, 215, 0, ${fxTimer/fxDuration})`;
+            ctx.lineWidth = 3; ctx.shadowBlur = 20; ctx.shadowColor = 'gold';
+            ctx.translate(cx, cy); ctx.rotate(m.rot);
+            // 繪製多重同心幾何圓與五角星
+            ctx.beginPath(); ctx.arc(0, 0, m.scale, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, m.scale*0.8, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath();
+            for(let i=0; i<8; i++) {
+                let a = (i * Math.PI / 4);
+                ctx.lineTo(Math.cos(a)*m.scale, Math.sin(a)*m.scale);
+            }
+            ctx.closePath(); ctx.stroke();
+            break;
+
+        case '高電壓等離子閃電':
+            ctx.strokeStyle = '#b0e0ff'; ctx.shadowBlur = 15; ctx.shadowColor = '#0077ff';
+            for(let k=0; k<3; k++) { // 同時產生三條主電弧
+                let lx = cx + (Math.random()-0.5)*100; let ly = 0;
+                ctx.lineWidth = Math.random()*3+1; ctx.beginPath(); ctx.moveTo(lx, ly);
+                while(ly < h) {
+                    lx += (Math.random() - 0.5) * 45; ly += Math.random() * 25 + 5;
+                    ctx.lineTo(lx, ly);
+                }
+                ctx.stroke();
+            }
+            break;
+
+        case '奈米機械風暴':
+            ctx.strokeStyle = 'rgba(0, 255, 100, 0.5)';
+            objects.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if(p.x<0||p.x>w) p.vx*=-1; if(p.y<0||p.y>h) p.vy*=-1;
+                ctx.fillStyle = '#42ff82';
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                // 特殊演算法：朝最靠近的奈米點拉出折線
+                let靠近日 = objects[Math.floor(Math.random()*objects.length)];
+                if(Math.hypot(p.x-靠近日.x, p.y-靠近日.y) < 150) {
+                    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(靠近日.x, 靠近日.y); ctx.stroke();
+                }
+            });
+            break;
+
+        case '復古像素方塊溶解':
+            objects.forEach(b => {
+                if(fxDuration - fxTimer > b.delay) {
+                    b.alpha -= 0.04; b.size *= 0.94;
+                    if(b.alpha > 0) {
+                        ctx.fillStyle = `rgba(255, 90, 0, ${b.alpha})`;
+                        ctx.fillRect(b.x + (b.w - b.size)/2, b.y + (b.h - b.size)/2, b.size, b.size);
+                    }
+                }
+            });
+            break;
+
+        case '宇宙極光帷幕':
+            objects.forEach(g => {
+                g.seed += 0.005;
+                ctx.beginPath();
+                for(let x=0; x<w; x+=10) {
+                    let yOffset = Math.sin(x*0.003 + g.seed) * Math.cos(x*0.001 + g.seed*0.5) * 120;
+                    ctx.fillStyle = `hsla(${g.hue}, 100%, 50%, 0.06)`;
+                    ctx.fillRect(x, g.y + yOffset, 8, 150);
+                }
+            });
+            break;
+
+        case '超時空曲速推進':
+            ctx.lineWidth = 2;
+            objects.forEach(s => {
+                s.z -= 12; if(s.z <= 0) s.z = w;
+                let k = 400 / s.z;
+                let px = s.x * k + cx; let py = s.y * k + cy;
+                let size = (1 - s.z/w) * 5;
+                // 藉由畫出射線形成速度拉伸感
+                ctx.strokeStyle = `rgba(200, 220, 255, ${(1 - s.z/w)})`;
+                ctx.beginPath(); ctx.moveTo(px, py);
+                ctx.lineTo(px + (px-cx)*0.1, py + (py-cy)*0.1); ctx.stroke();
+            });
+            break;
+
+        case '鳳凰涅槃火雨':
+            objects.forEach(f => {
+                f.y += f.vy; f.x += f.vx;
+                if(f.y > h) { f.y = -20; f.x = Math.random()*w; }
+                ctx.fillStyle = `hsla(${f.h}, 100%, 50%, ${fxTimer/fxDuration})`;
+                ctx.shadowBlur = 10; ctx.shadowColor = 'red';
+                ctx.beginPath(); ctx.arc(f.x, f.y, f.size, 0, Math.PI*2); ctx.fill();
+            });
+            break;
+
+        case '冰霜新星凍結':
+            ctx.strokeStyle = 'rgba(150, 220, 255, 0.6)'; ctx.lineWidth = 1.5;
+            objects.forEach(b => {
+                if(b.dist < Math.max(w,h)*0.4) b.dist += b.speed;
+                let x = cx + Math.cos(b.angle)*b.dist; let y = cy + Math.sin(b.angle)*b.dist;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - Math.cos(b.angle)*b.len, y - Math.sin(b.angle)*b.len);
+                ctx.stroke();
+                if(b.branch && Math.random()>0.97) { // 隨機冰晶分叉分支
+                    ctx.beginPath(); ctx.moveTo(x, y);
+                    ctx.lineTo(x + Math.cos(b.angle+0.5)*15, y + Math.sin(b.angle+0.5)*15); ctx.stroke();
+                }
+            });
+            break;
+
+        case '數位矩陣代碼雨':
+            ctx.fillStyle = '#0f0'; ctx.font = '14px monospace';
+            objects.forEach(drop => {
+                let char = String.fromCharCode(33 + Math.floor(Math.random()*93));
+                ctx.fillText(char, drop.x, drop.y);
+                drop.y += drop.speed;
+                if(drop.y > h && Math.random() > 0.975) drop.y = 0;
+            });
+            break;
+
+        case '超維度幾何超立方':
+            let time = frameCount * 0.01;
+            ctx.strokeStyle = '#ff00ff'; ctx.lineWidth = 2; ctx.shadowBlur = 15; ctx.shadowColor = '#ff00ff';
+            ctx.translate(cx, cy);
+            // 藉由雙重迴圈旋轉畫出動態四維投影投影
+            for(let i=0; i<4; i++) {
+                ctx.rotate(time);
+                ctx.strokeRect(-80 - i*20, -80 - i*20, 160 + i*40, 160 + i*40);
+            }
+            break;
+
+        case '聲波頻譜干涉':
+            ctx.lineWidth = 3;
+            for(let i=0; i<w; i+=8) {
+                let totalAmp = 0;
+                objects.forEach(wave => {
+                    totalAmp += Math.sin(i * wave.freq + frameCount * 0.1 + wave.phase) * wave.amp;
+                });
+                let hue = (i/w)*120 + 200;
+                ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.8)`;
+                ctx.fillRect(i, cy + totalAmp, 4, Math.max(2, Math.abs(totalAmp)*0.2));
+            }
+            break;
+
+        case '重力奇點碎裂':
+            let singularityX = cx + Math.sin(frameCount*0.05)*100;
+            let singularityY = cy + Math.cos(frameCount*0.05)*50;
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(singularityX, singularityY, 8, 0, Math.PI*2); ctx.fill();
+            objects.forEach(p => {
+                let dx = singularityX - p.x; let dy = singularityY - p.y;
+                let dist = Math.hypot(dx, dy);
+                if(dist > 10) {
+                    let force = (p.mass * 8) / (dist * 0.05); // 萬有引力模擬
+                    p.vx += (dx / dist) * force * 0.1; p.vy += (dy / dist) * force * 0.1;
+                }
+                p.x += p.vx; p.y += p.vy; p.vx *= 0.95; p.vy *= 0.95; // 阻尼
+                ctx.fillStyle = `hsla(${p.h}, 100%, 60%, 0.8)`;
+                ctx.fillRect(p.x, p.y, p.mass, p.mass);
+            });
+            break;
+
+        case '暗物質迷霧':
+            objects.forEach(m => {
+                m.x += m.vx; m.y += m.vy; m.pulse += 0.02;
+                if(m.x<0||m.x>w) m.vx*=-1; if(m.y<0||m.y>h) m.vy*=-1;
+                let dynamicR = m.r + Math.sin(m.pulse)*15;
+                let grad = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, dynamicR);
+                grad.addColorStop(0, 'rgba(70, 0, 150, 0.3)');
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(m.x, m.y, dynamicR, 0, Math.PI*2); ctx.fill();
+            });
+            break;
+
+        case '雷射光束干涉網':
+            ctx.lineWidth = 1;
+            objects.forEach((laser, idx) => {
+                laser.x += (laser.targetX - laser.x)*0.05; laser.y += (laser.targetY - laser.y)*0.05;
+                if(Math.hypot(laser.targetX-laser.x, laser.targetY-laser.y) < 10) {
+                    laser.targetX = Math.random()*w; laser.targetY = Math.random()*h;
+                }
+                ctx.strokeStyle = `rgba(255, 0, 50, 0.7)`; ctx.shadowBlur = 10; ctx.shadowColor = 'red';
+                ctx.beginPath(); ctx.moveTo(laser.x, 0); ctx.lineTo(w - laser.x, h); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, laser.y); ctx.lineTo(w, h - laser.y); ctx.stroke();
+            });
+            break;
+
+        case '生物螢光水母流':
+            objects.forEach(j => {
+                j.y -= j.speed; j.pulse += 0.04;
+                j.x += Math.sin(j.pulse)*0.5;
+                if(j.y < -50) { j.y = h+50; j.x = Math.random()*w; }
+                // 觸手繪製算法
+                ctx.fillStyle = 'rgba(0, 200, 255, 0.2)';
+                ctx.beginPath(); ctx.arc(j.x, j.y, j.r, Math.PI, 0); ctx.fill();
+                ctx.strokeStyle = 'rgba(0, 200, 255, 0.4)'; ctx.lineWidth = 1.5;
+                for(let i=0; i<5; i++) {
+                    let tx = j.x - j.r + (j.r*2/4)*i;
+                    ctx.beginPath(); ctx.moveTo(tx, j.y);
+                    ctx.quadraticCurveTo(tx + Math.sin(j.pulse+i)*10, j.y + 30, tx, j.y + 50); ctx.stroke();
+                }
+            });
+            break;
+
+        case '終極宇宙大爆炸':
+            let b = objects[0];
+            if(b.stage === 0) { // 階段一：能量向奇點聚攏坍縮
+                b.radius += 2
