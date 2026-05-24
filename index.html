@@ -2,814 +2,2907 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>斬擊 & 鬼魂特效</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星岩傳說 — 多人養成對戰</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{width:100%;height:100%;overflow:hidden;background:#06070f;font-family:system-ui,sans-serif;touch-action:none;}
-canvas{position:fixed;inset:0;width:100%;height:100%;}
-#ui{position:fixed;bottom:0;left:0;right:0;z-index:10;background:rgba(4,5,14,.92);border-top:1px solid rgba(255,255,255,.08);padding:10px 8px 14px;display:flex;flex-direction:column;gap:8px;}
-.row{display:flex;gap:6px;justify-content:center;}
-.row-label{font-size:9px;letter-spacing:2px;text-align:center;color:rgba(255,255,255,.25);text-transform:uppercase;}
-button{flex:1;max-width:120px;padding:10px 4px 8px;border-radius:8px;border:1px solid;font-size:11px;font-weight:600;cursor:pointer;background:none;transition:all .15s;letter-spacing:.5px;line-height:1.3;}
-button .ic{display:block;font-size:18px;margin-bottom:3px;}
-.slash-btn{border-color:rgba(100,180,255,.35);color:rgba(140,200,255,.8);}
-.slash-btn.on,.slash-btn:active{background:rgba(80,160,255,.2);border-color:#4af;color:#adf;box-shadow:0 0 14px rgba(80,160,255,.4);}
-.ghost-btn{border-color:rgba(140,100,255,.35);color:rgba(180,150,255,.8);}
-.ghost-btn.on,.ghost-btn:active{background:rgba(120,80,255,.2);border-color:#a8f;color:#d4afff;box-shadow:0 0 14px rgba(120,80,255,.4);}
-#hint{position:fixed;top:14px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,.3);letter-spacing:1px;pointer-events:none;}
+:root {
+  --bg: #0a0c14;
+  --bg2: #0f1220;
+  --bg3: #161b2e;
+  --surface: #1a2035;
+  --surface2: #212840;
+  --border: #2a3555;
+  --border2: #3a4a70;
+  --accent: #4f8ef7;
+  --accent2: #7b5ea7;
+  --gold: #e8c84a;
+  --red: #e05555;
+  --green: #4ec97a;
+  --cyan: #3ecfcf;
+  --text: #dce3f5;
+  --text2: #8a9abf;
+  --text3: #5a6a8f;
+  --iron: #9e9e9e;
+  --bronze: #cd7f32;
+  --silver: #c0c0c0;
+  --yellow: #ffd700;
+  --plat: #a8d8ea;
+  --diamond: #b9f2ff;
+  --jade: #00a86b;
+  --obsidian: #3d1766;
+  --meteor: #ff6b35;
+  --starrock: #f9ca24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Noto Serif TC',serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,#0d1a3a 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,#1a0d3a 0%,transparent 60%);pointer-events:none;z-index:0}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ===== UTILS ===== */
+.hidden{display:none!important}
+.flex{display:flex}
+.col{flex-direction:column}
+.gap4{gap:4px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}
+.center{align-items:center;justify-content:center}
+.between{justify-content:space-between}
+.wrap{flex-wrap:wrap}
+.bold{font-weight:700}
+.mono{font-family:'Share Tech Mono',monospace}
+.gold{color:var(--gold)}
+.red{color:var(--red)}
+.green{color:var(--green)}
+.cyan{color:var(--cyan)}
+.accent{color:var(--accent)}
+
+/* ===== SCREENS ===== */
+.screen{position:fixed;inset:0;z-index:10;overflow-y:auto;padding:20px}
+.screen.active{display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
+
+/* ===== AUTH SCREEN ===== */
+#authScreen{background:var(--bg);padding:0}
+#authScreen::before{content:'';position:fixed;inset:0;background:
+  radial-gradient(circle at 30% 40%, #0d2a5a44 0%,transparent 50%),
+  radial-gradient(circle at 70% 60%, #2a0d5a33 0%,transparent 50%);pointer-events:none}
+.auth-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;position:relative;z-index:1}
+.auth-logo{font-size:52px;font-weight:900;letter-spacing:8px;color:var(--gold);text-shadow:0 0 30px #e8c84a88,0 0 60px #e8c84a33;margin-bottom:8px;animation:glow 3s ease-in-out infinite}
+@keyframes glow{0%,100%{text-shadow:0 0 30px #e8c84a88,0 0 60px #e8c84a33}50%{text-shadow:0 0 50px #e8c84aaa,0 0 100px #e8c84a55}}
+.auth-sub{color:var(--text2);font-size:14px;letter-spacing:4px;margin-bottom:40px}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:380px;backdrop-filter:blur(10px)}
+.auth-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:24px}
+.auth-tab{flex:1;padding:10px;text-align:center;cursor:pointer;color:var(--text2);font-size:15px;transition:.2s;border-bottom:2px solid transparent;margin-bottom:-1px}
+.auth-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:6px;letter-spacing:1px}
+.form-input{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;transition:.2s;font-family:inherit}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #4f8ef722}
+.btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:700;font-family:inherit;transition:.2s;letter-spacing:1px}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px #4f8ef744}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 28px #4f8ef766}
+.btn-primary:active{transform:translateY(0)}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border2);color:var(--text)}
+.btn-secondary:hover{background:var(--border);border-color:var(--border2)}
+.btn-danger{background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff}
+.btn-gold{background:linear-gradient(135deg,#b8860b,var(--gold));color:#0a0c14}
+.btn-sm{padding:6px 14px;font-size:12px}
+.btn-full{width:100%}
+.err-msg{color:var(--red);font-size:12px;margin-top:8px;text-align:center}
+.ok-msg{color:var(--green);font-size:12px;margin-top:8px;text-align:center}
+
+/* ===== MAIN LAYOUT ===== */
+#mainScreen{padding:0;align-items:stretch}
+.main-layout{display:flex;flex-direction:column;width:100%;max-width:1200px;margin:0 auto;min-height:100vh;position:relative;z-index:1}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar-logo{font-size:20px;font-weight:900;color:var(--gold);letter-spacing:4px}
+.player-info{display:flex;align-items:center;gap:12px}
+.rank-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px}
+.player-stats-mini{font-size:12px;color:var(--text2);display:flex;gap:12px}
+.stat-item{display:flex;align-items:center;gap:4px}
+.nav-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto}
+.nav-tab{padding:12px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:.2s;letter-spacing:1px}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.nav-tab:hover{color:var(--text)}
+.tab-content{padding:20px;flex:1;display:flex;flex-direction:column;min-height:0}
+.tab-content>div{flex:1;min-height:0}
+
+/* ===== HOME TAB ===== */
+.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.card-title{font-size:12px;color:var(--text2);letter-spacing:2px;margin-bottom:12px;text-transform:uppercase}
+.rank-display{text-align:center;padding:20px 0}
+.rank-name{font-size:36px;font-weight:900;margin-bottom:4px}
+.rank-exp{font-size:12px;color:var(--text2)}
+.progress-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .5s ease}
+.attrs-display{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.attr-box{background:var(--bg3);border-radius:8px;padding:10px 8px}
+.attr-val{font-size:22px;font-weight:700;font-family:'Share Tech Mono',monospace}
+.attr-lbl{font-size:10px;color:var(--text2);letter-spacing:1px;margin-top:2px}
+.hp .attr-val{color:var(--green)}
+.atk .attr-val{color:var(--red)}
+.def .attr-val{color:var(--cyan)}
+.gold-display{text-align:center;padding:16px 0}
+.gold-amount{font-size:40px;font-weight:900;font-family:'Share Tech Mono',monospace;color:var(--gold)}
+
+/* ===== SKILLS TAB ===== */
+.skills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.skill-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.skill-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.skill-name{font-size:16px;font-weight:700;margin-bottom:6px;color:var(--gold)}
+.skill-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px}
+.skill-level{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.skill-lvl-badge{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:3px 10px;font-size:12px;font-family:'Share Tech Mono',monospace}
+.skill-cap{font-size:11px;color:var(--text3)}
+.skill-cost{font-size:12px;color:var(--gold);margin-bottom:10px}
+
+/* ===== FRIENDS TAB ===== */
+.friend-list{display:flex;flex-direction:column;gap:8px}
+.friend-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.friend-name{font-size:14px;font-weight:700}
+.friend-rank{font-size:11px;color:var(--text2)}
+.friend-add{display:flex;gap:8px;margin-bottom:16px}
+.friend-input{flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;font-family:inherit}
+.friend-input:focus{border-color:var(--accent)}
+
+/* ===== LEADERBOARD ===== */
+.lb-list{display:flex;flex-direction:column;gap:8px}
+.lb-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.lb-rank{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'Share Tech Mono',monospace;background:var(--bg3);flex-shrink:0}
+.lb-rank.top1{background:linear-gradient(135deg,#b8860b,var(--gold));color:#000}
+.lb-rank.top2{background:linear-gradient(135deg,#888,#ccc);color:#000}
+.lb-rank.top3{background:linear-gradient(135deg,#7a4f00,#cd7f32);color:#000}
+.lb-name{flex:1;font-size:14px;font-weight:700}
+.lb-info{font-size:12px;color:var(--text2);text-align:right}
+
+/* ===== CHAT ===== */
+.chat-layout{display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:320px}
+.chat-messages{flex:1;overflow-y:auto;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:10px 10px 0 0;display:flex;flex-direction:column;gap:6px;min-height:0}
+.chat-msg{padding:6px 10px;border-radius:8px;max-width:85%}
+.chat-msg.own{background:var(--surface2);border:1px solid var(--border2);align-self:flex-end}
+.chat-msg.other{background:var(--surface);border:1px solid var(--border);align-self:flex-start}
+.chat-msg-user{font-size:11px;color:var(--text2);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.chat-msg-text{font-size:13px;line-height:1.5;word-break:break-all}
+.chat-input-row{display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);border-top:none;padding:10px;border-radius:0 0 10px 10px;flex-shrink:0}
+.chat-input{flex:1;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:inherit;resize:none;min-height:44px;max-height:44px}
+.chat-input:focus{border-color:var(--accent)}
+.chat-send-btn{padding:10px 18px;font-size:14px;flex-shrink:0;min-height:44px}
+
+/* ===== MATCH/TEAM SCREEN ===== */
+#matchScreen,.game-overlay{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.match-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:480px;text-align:center}
+.match-title{font-size:28px;font-weight:900;color:var(--gold);margin-bottom:8px;letter-spacing:4px}
+.match-sub{font-size:13px;color:var(--text2);margin-bottom:32px;letter-spacing:2px}
+.match-btn-group{display:flex;flex-direction:column;gap:12px}
+.team-display{display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+.team-slot{width:100px;height:100px;background:var(--bg3);border:2px dashed var(--border2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--text3);gap:4px;transition:.3s}
+.team-slot.filled{border-style:solid;border-color:var(--accent);color:var(--text);background:var(--surface2)}
+.team-slot.bot{border-color:var(--text3)}
+.match-status{font-size:14px;color:var(--text2);margin:16px 0;letter-spacing:2px}
+.match-timer{font-size:32px;font-weight:700;font-family:'Share Tech Mono',monospace;color:var(--gold);margin:8px 0}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:16px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.room-code-display{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 20px;font-size:28px;font-family:'Share Tech Mono',monospace;color:var(--gold);letter-spacing:6px;margin:16px 0}
+
+/* ===== GAME SCREEN ===== */
+#gameScreen{position:fixed;inset:0;z-index:300;background:var(--bg);overflow-y:auto;padding:16px}
+.game-container{max-width:900px;margin:0 auto}
+.game-header{text-align:center;margin-bottom:20px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.game-stage{font-size:18px;font-weight:900;color:var(--gold);letter-spacing:4px}
+.alloc-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.alloc-title{font-size:14px;color:var(--text2);letter-spacing:2px;margin-bottom:16px;text-align:center}
+.points-left{text-align:center;margin-bottom:16px;font-size:24px;font-weight:700;font-family:'Share Tech Mono',monospace;color:var(--accent)}
+.alloc-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.alloc-lbl{width:60px;font-size:13px;color:var(--text2)}
+.alloc-val{width:50px;text-align:center;font-size:18px;font-weight:700;font-family:'Share Tech Mono',monospace}
+.alloc-btn{width:32px;height:32px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:18px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center}
+.alloc-btn:hover:not(:disabled){background:var(--surface2);border-color:var(--accent)}
+.alloc-btn:disabled{opacity:.3;cursor:not-allowed}
+.alloc-hint{font-size:11px;color:var(--text3);margin-left:4px}
+
+/* ===== BATTLE AREA ===== */
+.battle-area{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start;margin-bottom:20px}
+.team-panel{display:flex;flex-direction:column;gap:8px}
+.team-label{font-size:11px;letter-spacing:2px;color:var(--text2);text-align:center;margin-bottom:4px}
+.fighter-card{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:10px;cursor:default;transition:.2s;position:relative}
+.fighter-card.alive{border-color:var(--border2)}
+.fighter-card.dead{opacity:.4;border-color:var(--border);filter:grayscale(.8)}
+.fighter-card.enemy.alive{cursor:pointer}
+.fighter-card.enemy.alive:hover{border-color:var(--red);background:var(--surface2)}
+.fighter-card.active-turn{border-color:var(--gold);box-shadow:0 0 12px #e8c84a44;animation:pulse .8s ease-in-out infinite alternate}
+@keyframes pulse{0%{box-shadow:0 0 8px #e8c84a44}100%{box-shadow:0 0 20px #e8c84a88}}
+.fighter-card.target-selected{border-color:var(--red);box-shadow:0 0 12px #e0555544}
+.fighter-name{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between}
+.hp-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.hp-fill{height:100%;border-radius:3px;transition:width .4s ease}
+.hp-fill.high{background:var(--green)}
+.hp-fill.mid{background:var(--gold)}
+.hp-fill.low{background:var(--red)}
+.fighter-stats{display:flex;gap:8px;font-size:11px;font-family:'Share Tech Mono',monospace}
+.fs-hp{color:var(--green)}
+.fs-atk{color:var(--red)}
+.fs-def{color:var(--cyan)}
+.vs-badge{display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:var(--text2);padding:20px 0}
+.battle-log{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;height:180px;overflow-y:auto;margin-bottom:16px}
+.log-entry{font-size:12px;line-height:1.8;padding:2px 0;border-bottom:1px solid #ffffff08}
+.log-entry:last-child{border-bottom:none}
+.battle-controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.battle-hint{text-align:center;font-size:13px;color:var(--gold);margin-bottom:8px;letter-spacing:1px;min-height:22px;font-weight:700}
+.turn-indicator{text-align:center;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:12px;letter-spacing:1px}
+.result-overlay{position:fixed;inset:0;z-index:400;background:#00000099;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.result-card{background:var(--surface);border:2px solid var(--border2);border-radius:20px;padding:40px;text-align:center;max-width:420px;width:100%;animation:popIn .4s cubic-bezier(.175,.885,.32,1.275) forwards}
+@keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.result-title{font-size:40px;font-weight:900;margin-bottom:12px;letter-spacing:4px}
+.result-win{color:var(--gold)}
+.result-lose{color:var(--red)}
+.result-rewards{margin:16px 0;font-size:14px;color:var(--text2);line-height:2}
+.dmg-popup{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:900;font-family:'Share Tech Mono',monospace;pointer-events:none;animation:dmgFloat 1.2s ease-out forwards;z-index:50;white-space:nowrap}
+@keyframes dmgFloat{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-40px)}}
+.dmg-normal{color:var(--red)}
+.dmg-crit{color:var(--gold)}
+.dmg-thorns{color:var(--cyan)}
+.dmg-block{color:var(--text3)}
+.dmg-heal{color:var(--green)}
+
+/* ===== RANK COLORS ===== */
+.rank-鐵{color:var(--iron)}.rank-銅{color:var(--bronze)}.rank-銀{color:var(--silver)}.rank-金{color:var(--yellow)}.rank-白金{color:var(--plat)}.rank-鑽{color:var(--diamond)}.rank-翡{color:var(--jade)}.rank-曜{color:var(--accent2)}.rank-隕{color:var(--meteor)}.rank-岩{color:var(--starrock)}
+
+/* ===== BATTLE EFFECTS ===== */
+.fx-overlay{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:20;border-radius:10px}
+/* Slash lines */
+.slash-line{position:absolute;width:140%;height:3px;border-radius:2px;transform-origin:left center;animation:slashAnim 0.35s ease-out forwards}
+@keyframes slashAnim{
+  0%{opacity:0;transform:scaleX(0) rotate(var(--slash-angle));filter:brightness(3)}
+  15%{opacity:1;transform:scaleX(1.1) rotate(var(--slash-angle));filter:brightness(3)}
+  60%{opacity:.8;transform:scaleX(1) rotate(var(--slash-angle));filter:brightness(1.5)}
+  100%{opacity:0;transform:scaleX(.8) rotate(var(--slash-angle));filter:brightness(1)}
+}
+.slash-glow{position:absolute;inset:-4px;border-radius:10px;animation:slashGlow .4s ease-out forwards}
+@keyframes slashGlow{0%{box-shadow:inset 0 0 20px 4px var(--glow-color);opacity:1}100%{box-shadow:none;opacity:0}}
+/* Hit flash */
+.hit-flash{position:absolute;inset:0;border-radius:10px;animation:hitFlash .3s ease-out forwards;pointer-events:none}
+@keyframes hitFlash{0%{background:#e0555566}40%{background:#e0555522}100%{background:transparent}}
+/* Damage number */
+.fx-dmg{position:absolute;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-weight:900;pointer-events:none;animation:dmgRise .9s ease-out forwards;z-index:30;white-space:nowrap;text-shadow:0 2px 8px #000}
+@keyframes dmgRise{0%{opacity:1;top:40%;font-size:22px}60%{opacity:1;top:5%;font-size:26px}100%{opacity:0;top:-10%;font-size:20px}}
+/* Ghost death */
+.fx-ghost{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px;animation:ghostFloat 1.6s ease-out forwards;pointer-events:none;z-index:25}
+@keyframes ghostFloat{0%{opacity:0;transform:translateY(0) scale(.5)}30%{opacity:1;transform:translateY(-10px) scale(1.1)}80%{opacity:.7;transform:translateY(-30px) scale(1)}100%{opacity:0;transform:translateY(-55px) scale(.8)}}
+/* Explosion */
+.fx-explosion{position:absolute;inset:-10px;display:flex;align-items:center;justify-content:center;font-size:52px;animation:explode .7s cubic-bezier(.175,.885,.32,1.275) forwards;pointer-events:none;z-index:25}
+@keyframes explode{0%{opacity:0;transform:scale(0.2)}25%{opacity:1;transform:scale(1.4)}60%{opacity:1;transform:scale(1.1)}100%{opacity:0;transform:scale(1.6)}}
+/* Tombstone */
+.fx-tombstone{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:36px;animation:tombDrop .6s cubic-bezier(.175,.885,.32,1.275) forwards;pointer-events:none;z-index:25}
+@keyframes tombDrop{0%{opacity:0;transform:translateY(-30px) scale(.5)}50%{opacity:1;transform:translateY(4px) scale(1.15)}100%{opacity:1;transform:translateY(0) scale(1)}}
+
+
+/* ===== TEAM CHAT PANEL ===== */
+.team-chat-panel{background:var(--bg3);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;overflow:hidden}
+.team-chat-header{padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.team-chat-header:hover{background:var(--surface2)}
+.team-chat-body{display:flex;flex-direction:column}
+.team-chat-msgs{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px;min-height:80px;max-height:150px}
+.team-chat-input-row{display:flex;gap:6px;padding:6px 8px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.team-chat-input{flex:1;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;font-family:inherit}
+.team-chat-input:focus{border-color:var(--accent)}
+.game-chat-panel{position:fixed;bottom:16px;right:16px;width:280px;z-index:320;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px #00000088;border:1px solid var(--border2);background:var(--bg3)}
+.game-chat-panel.collapsed .team-chat-body{display:none}
+@media(max-width:700px){.game-chat-panel{width:calc(100vw - 32px)}}
+
+@media(max-width:700px){
+  .battle-area{grid-template-columns:1fr;grid-template-rows:auto auto auto}
+  .vs-badge{transform:rotate(90deg)}
+  .home-grid{grid-template-columns:1fr}
+  .skills-grid{grid-template-columns:1fr}
+}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:#00000099;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:28px;width:100%;max-width:420px;animation:popIn .3s ease forwards}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:16px;color:var(--gold)}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+
+/* ===== NOTIFICATION ===== */
+.notif{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:700;animation:slideIn .3s ease,fadeOut .3s ease 2.7s forwards;pointer-events:none;max-width:300px}
+.notif-ok{background:var(--green);color:#000}
+.notif-err{background:var(--red);color:#fff}
+.notif-info{background:var(--accent);color:#fff}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{to{opacity:0;transform:translateX(20px)}}
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="hint">點擊 / 觸碰畫面觸發特效</div>
-<div id="ui">
-  <div class="row-label">⚔ 斬擊</div>
-  <div class="row" id="slashRow"></div>
-  <div class="row-label">👻 鬼魂</div>
-  <div class="row" id="ghostRow"></div>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen" class="screen active">
+  <div class="auth-hero">
+    <div class="auth-logo">星岩傳說</div>
+    <div class="auth-sub">LEGEND OF STARROCK</div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="switchAuthTab('login')">登入</div>
+        <div class="auth-tab" onclick="switchAuthTab('register')">註冊</div>
+      </div>
+      <!-- Login -->
+      <div id="loginForm">
+        <div class="form-group"><div class="form-label">暱稱</div><input class="form-input" id="loginName" placeholder="輸入暱稱" autocomplete="username"></div>
+        <div class="form-group"><div class="form-label">密碼</div><input class="form-input" id="loginPass" type="password" placeholder="輸入密碼" autocomplete="current-password"></div>
+        <button class="btn btn-primary btn-full" onclick="doLogin()">登入遊戲</button>
+        <div id="loginMsg"></div>
+      </div>
+      <!-- Register -->
+      <div id="registerForm" class="hidden">
+        <div class="form-group"><div class="form-label">暱稱</div><input class="form-input" id="regName" placeholder="2-12字元" autocomplete="username"></div>
+        <div class="form-group"><div class="form-label">密碼</div><input class="form-input" id="regPass" type="password" placeholder="4字元以上" autocomplete="new-password"></div>
+        <div class="form-group"><div class="form-label">確認密碼</div><input class="form-input" id="regPass2" type="password" placeholder="再輸入一次" autocomplete="new-password"></div>
+        <button class="btn btn-primary btn-full" onclick="doRegister()">建立帳號</button>
+        <div id="registerMsg"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<script>
-// ── Setup ──
-const cv = document.getElementById('c');
-const ctx = cv.getContext('2d', { alpha: false });
-let W, H;
-function resize() {
-  W = cv.width = cv.clientWidth;
-  H = cv.height = cv.clientHeight;
-}
-resize();
-window.addEventListener('resize', resize);
+<!-- MAIN SCREEN -->
+<div id="mainScreen" class="screen hidden">
+  <div class="main-layout">
+    <div class="topbar">
+      <div class="topbar-logo">星岩傳說</div>
+      <div class="player-info">
+        <span id="tb-rank" class="rank-badge"></span>
+        <span id="tb-name" class="bold" style="font-size:14px"></span>
+        <div class="player-stats-mini">
+          <div class="stat-item gold">💰<span id="tb-gold">0</span></div>
+          <div class="stat-item green">⬡<span id="tb-exp">0</span></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="doLogout()">登出</button>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="switchTab('home')">🏠 主頁</div>
+      <div class="nav-tab" onclick="switchTab('play')">⚔️ 進行遊戲</div>
+      <div class="nav-tab" onclick="switchTab('skills')">✨ 技能商店</div>
+      <div class="nav-tab" onclick="switchTab('friends')">👥 好友</div>
+      <div class="nav-tab" onclick="switchTab('leaderboard')">🏆 排行榜</div>
+      <div class="nav-tab" onclick="switchTab('globalChat')">💬 全服聊天</div>
+    </div>
+    <div class="tab-content">
 
-const tau = Math.PI * 2;
-const rr = (a, b) => a + (b - a) * Math.random();
-const ri = (a, b) => Math.floor(rr(a, b + 1));
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const lerp = (a, b, t) => a + (b - a) * t;
+      <!-- HOME TAB -->
+      <div id="tab-home">
+        <div class="home-grid">
+          <div class="card">
+            <div class="card-title">等級 / 排名</div>
+            <div class="rank-display">
+              <div id="rank-name-big" class="rank-name"></div>
+              <div id="rank-exp-text" class="rank-exp"></div>
+              <div class="progress-bar"><div id="rank-progress" class="progress-fill" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">基礎屬性</div>
+            <div class="attrs-display">
+              <div class="attr-box hp"><div class="attr-val" id="stat-hp">5</div><div class="attr-lbl">血量</div></div>
+              <div class="attr-box atk"><div class="attr-val" id="stat-atk">0</div><div class="attr-lbl">攻擊</div></div>
+              <div class="attr-box def"><div class="attr-val" id="stat-def">0</div><div class="attr-lbl">防禦</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">金幣</div>
+            <div class="gold-display"><div class="gold-amount" id="stat-gold">0</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">已解鎖技能</div>
+          <div id="home-skills-list" style="font-size:13px;color:var(--text2);line-height:2"></div>
+        </div>
+      </div>
 
-// ── Noise ──
-const _perm = (() => {
-  const p = new Uint8Array(512);
-  for (let i = 0; i < 256; i++) p[i] = p[i + 256] = i;
-  for (let i = 255; i > 0; i--) { const j = ri(0, i); [p[i], p[j]] = [p[j], p[i]]; }
-  return p;
-})();
-function noise2(x, y) {
-  const X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
-  const xf = x - Math.floor(x), yf = y - Math.floor(y);
-  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
-  const g = (h, dx, dy) => { const k = h & 3; return (k === 0 ? dx - dy : k === 1 ? -dx - dy : k === 2 ? dx + dy : -dx + dy); };
-  const a = _perm[X] + Y, b = _perm[X + 1] + Y;
-  return lerp(lerp(g(_perm[a], xf, yf), g(_perm[b], xf - 1, yf), u),
-              lerp(g(_perm[a + 1], xf, yf - 1), g(_perm[b + 1], xf - 1, yf - 1), u), v);
-}
+      <!-- PLAY TAB -->
+      <div id="tab-play" class="hidden">
+        <div style="max-width:500px;margin:0 auto;text-align:center">
+          <div style="font-size:24px;font-weight:900;color:var(--gold);letter-spacing:4px;margin-bottom:8px">選擇遊玩方式</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:32px;letter-spacing:1px">與隊友一起挑戰五關怪物</div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <button class="btn btn-primary" style="padding:16px;font-size:16px" onclick="showCreateTeam()">⚔️ 建立小隊</button>
+            <button class="btn btn-secondary" style="padding:16px;font-size:16px;border-color:var(--accent2);color:var(--accent2)" onclick="showJoinTeam()">🔑 加入小隊</button>
+            <button class="btn btn-secondary" style="padding:16px;font-size:16px" onclick="startMatchmaking()">🔀 隨機匹配</button>
+          </div>
+        </div>
+      </div>
 
-// ── Global state ──
-let T = 0;
-let currentFx = null;
-let shakeX = 0, shakeY = 0, shakeF = 0, shakeMag = 0;
-let flashLife = 0;
-// Per-effect persistent objects
-let particles = [];
-let slashLines = [];
-let ghostEntities = [];
-let afterImages = [];
-let ripples = [];
-let cracks = [];
-let embers = [];
-let glowOrbs = [];
+      <!-- SKILLS TAB -->
+      <div id="tab-skills" class="hidden">
+        <div id="skills-grid" class="skills-grid"></div>
+      </div>
 
-function shake(f, m) { shakeF = f; shakeMag = m; }
-function flash(a) { flashLife = a; }
+      <!-- FRIENDS TAB -->
+      <div id="tab-friends" class="hidden">
+        <div class="friend-add">
+          <input class="friend-input" id="friendInput" placeholder="輸入玩家暱稱">
+          <button class="btn btn-primary" onclick="addFriend()">新增好友</button>
+        </div>
+        <div id="friendRequests" class="hidden" style="margin-bottom:16px">
+          <div style="font-size:12px;color:var(--text2);letter-spacing:2px;margin-bottom:8px">好友邀請</div>
+          <div id="friendReqList"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text2);letter-spacing:2px;margin-bottom:8px">好友列表</div>
+        <div id="friendsList" class="friend-list"></div>
+      </div>
 
-// ── Particle pool ──
-const P_CAP = 600;
-function addP(o) {
-  if (particles.length >= P_CAP) return;
-  particles.push({ life: 1, decay: .018, x: W/2, y: H/2, vx: 0, vy: 0, grav: 0, drag: .97, sz: 4, hue: 200, sat: 100, lit: 65, al: 1, blur: 6, shape: 'c', rot: 0, rv: 0, ...o });
-}
-function tickParticles() {
-  const nx = [];
-  for (let i = 0; i < particles.length; i++) {
-    const p = particles[i];
-    p.life -= p.decay;
-    if (p.life <= 0) continue;
-    p.vx *= p.drag; p.vy *= p.drag; p.vy += p.grav;
-    p.x += p.vx; p.y += p.vy; p.rot += p.rv;
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = p.life * p.al;
-    ctx.shadowBlur = p.blur * p.life;
-    ctx.shadowColor = `hsl(${p.hue},${p.sat}%,${p.lit}%)`;
-    ctx.fillStyle   = `hsl(${p.hue + T * .4},${p.sat}%,${p.lit}%)`;
-    const s = Math.max(.5, p.sz * (p.shape === 'c' ? p.life : 1));
-    if (p.shape === 'c') {
-      ctx.beginPath(); ctx.arc(p.x, p.y, s, 0, tau); ctx.fill();
-    } else if (p.shape === 'd') {
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-      ctx.beginPath(); ctx.moveTo(0,-s); ctx.lineTo(s*.6,0); ctx.lineTo(0,s); ctx.lineTo(-s*.6,0); ctx.closePath(); ctx.fill(); ctx.restore();
-    } else if (p.shape === 't') {
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-      ctx.beginPath(); ctx.moveTo(0,-s*1.2); ctx.lineTo(s*.7,s); ctx.lineTo(-s*.7,s); ctx.closePath(); ctx.fill(); ctx.restore();
-    }
-    nx.push(p);
-  }
-  particles = nx;
-  ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-}
+      <!-- LEADERBOARD TAB -->
+      <div id="tab-leaderboard" class="hidden">
+        <div id="lbList" class="lb-list"></div>
+      </div>
 
-// ════════════════════════════════════════════════
-//  SLASH EFFECTS  (5種)
-// ════════════════════════════════════════════════
+      <!-- GLOBAL CHAT -->
+      <div id="tab-globalChat" class="hidden">
+        <div class="chat-layout">
+          <div id="globalChatMessages" class="chat-messages"></div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="globalChatInput" placeholder="輸入訊息..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendGlobalChat()}">
+            <button class="btn btn-primary chat-send-btn" onclick="sendGlobalChat()">發送</button>
+          </div>
+        </div>
+      </div>
 
-// ── S1: 天斬 Heaven Slash ── 純白聖劍光刃橫掃全屏，帶聖光羽毛炸散
-function slash1(x, y) {
-  const angle = rr(-.18, .18);
-  const len = Math.max(W, H) * 1.1;
-  // 主刃 + 多層輝光
-  for (let layer = 0; layer < 5; layer++) {
-    slashLines.push({
-      type: 's1', layer,
-      x1: x - Math.cos(angle) * len / 2, y1: y - Math.sin(angle) * len / 2,
-      x2: x + Math.cos(angle) * len / 2, y2: y + Math.sin(angle) * len / 2,
-      life: 1, decay: .028 + layer * .012,
-      width: [28, 18, 10, 5, 1.5][layer],
-      hue: [55, 48, 42, 35, 0][layer], sat: [80, 90, 100, 100, 0][layer], lit: [60, 70, 80, 92, 100][layer]
-    });
-  }
-  // 衝擊波環
-  for (let i = 0; i < 4; i++) ripples.push({ x, y, r: i * 15, life: 1, decay: .016, hue: 50, delay: i * 4, frame: 0 });
-  // 羽毛粒子
-  for (let i = 0; i < 60; i++) {
-    const a = rr(0, tau), sp = rr(2, 10);
-    addP({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 1, hue: rr(40,60), sat:90, lit:85, sz:rr(2,8), blur:12, grav:.04, drag:.97, decay:rr(.01,.025), shape:'d', rot:rr(0,tau), rv:rr(-.08,.08) });
-  }
-  flash(.9); shake(14, 10);
-}
+    </div><!-- end tab-content -->
+  </div>
+</div>
 
-// ── S2: 月牙斬 Crescent Blade ── 弧形月牙能量斬，帶殘影與冰藍碎屑
-function slash2(x, y) {
-  const baseAngle = rr(0, tau);
-  const arcR = Math.min(W, H) * .45;
-  // 月牙弧線 (多段折線模擬弧形)
-  for (let layer = 0; layer < 4; layer++) {
-    const pts = [];
-    const arcSpan = Math.PI * .9;
-    const n = 40;
-    for (let i = 0; i <= n; i++) {
-      const a = baseAngle - arcSpan / 2 + (arcSpan * i / n);
-      pts.push({ x: x + Math.cos(a) * (arcR + layer * 3), y: y + Math.sin(a) * (arcR + layer * 3) });
-    }
-    slashLines.push({ type: 's2', layer, pts, life: 1, decay: .022 + layer * .01, width: [18, 10, 5, 2][layer], hue: 200, sat: 90, lit: [80, 70, 60, 50][layer] });
-  }
-  // 弧形碎屑粒子
-  for (let i = 0; i < 55; i++) {
-    const a = baseAngle - Math.PI * .45 + rr(0, Math.PI * .9);
-    const rad = arcR + rr(-20, 20);
-    const sp = rr(2, 9);
-    const tx = x + Math.cos(a) * rad, ty = y + Math.sin(a) * rad;
-    addP({ x: tx, y: ty, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, hue: rr(190,220), sat:100, lit:80, sz:rr(1.5,5), blur:10, grav:.06, drag:.97, decay:rr(.012,.028) });
-  }
-  // 殘影
-  for (let i = 0; i < 3; i++) {
-    afterImages.push({ type: 's2', x, y, arcR, baseAngle, life: 1, decay: .04 + i * .02, offset: i * .12 });
-  }
-  flash(.75); shake(10, 8);
-}
+<!-- MATCH SCREEN -->
+<div id="matchScreen" class="hidden">
+  <div class="match-card">
+    <div class="match-title" id="matchTitle">隨機匹配</div>
+    <div class="match-sub" id="matchSub">搜尋隊友中...</div>
+    <div class="team-display" id="matchTeamDisplay"></div>
+    <div class="match-timer" id="matchTimer"></div>
+    <div class="match-status" id="matchStatus"></div>
+    <div class="spinner" id="matchSpinner"></div>
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px" id="matchBtns">
+      <button class="btn btn-danger" onclick="cancelMatchmaking()">取消匹配</button>
+    </div>
+    <!-- Lobby Team Chat -->
+    <div id="lobbyChatWrap" class="hidden" style="margin-top:20px;width:100%;max-width:420px">
+      <div class="team-chat-panel">
+        <div class="team-chat-header">🔗 小隊聊天</div>
+        <div class="team-chat-body">
+          <div id="lobbyChatMsgs" class="team-chat-msgs"></div>
+          <div class="team-chat-input-row">
+            <input class="team-chat-input" id="lobbyChatInput" placeholder="輸入訊息..." onkeydown="if(event.key==='Enter'){sendTeamChat('lobby')}">
+            <button class="btn btn-primary btn-sm" onclick="sendTeamChat('lobby')">發送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-// ── S3: 血斬 Blood Slash ── 暗紅能量斬裂，地面裂縫延伸+血色爆散
-function slash3(x, y) {
-  const angle = rr(-.3, .3) - Math.PI / 2;
-  const len = Math.max(W, H) * .95;
-  // 主刃
-  for (let layer = 0; layer < 4; layer++) {
-    slashLines.push({
-      type: 's1', layer,
-      x1: x - Math.cos(angle) * len / 2, y1: y - Math.sin(angle) * len / 2,
-      x2: x + Math.cos(angle) * len / 2, y2: y + Math.sin(angle) * len / 2,
-      life: 1, decay: .025 + layer * .01,
-      width: [22, 13, 7, 2.5][layer],
-      hue: [0, 5, 10, 0][layer], sat: 100, lit: [30, 45, 60, 80][layer]
-    });
-  }
-  // 地裂縫
-  for (let i = 0; i < 6; i++) {
-    const ca = angle + rr(-.6, .6);
-    const crackLen = rr(60, 200);
-    let pts = [{ x, y }];
-    let cx2 = x, cy2 = y;
-    for (let j = 0; j < ri(4, 9); j++) {
-      cx2 += Math.cos(ca + rr(-.4, .4)) * crackLen / 6;
-      cy2 += Math.sin(ca + rr(-.4, .4)) * crackLen / 6;
-      pts.push({ x: cx2, y: cy2 });
-    }
-    cracks.push({ pts, life: 1, decay: .006, hue: 0, width: rr(.8, 2.5) });
-  }
-  // 血色爆散
-  for (let i = 0; i < 70; i++) {
-    const a = rr(0, tau), sp = rr(1.5, 11);
-    addP({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, hue: rr(0,15), sat:100, lit:rr(35,60), sz:rr(2,7), blur:10, grav:.1, drag:.96, decay:rr(.01,.025), shape:'c' });
-  }
-  flash(.7); shake(16, 13);
-}
+<!-- GAME SCREEN -->
+<div id="gameScreen" class="hidden">
+  <div class="game-container">
+    <div class="game-header">
+      <div class="game-stage" id="gameStageText">第 1 關</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px" id="gameStageSub">分配屬性點數</div>
+    </div>
 
-// ── S4: 電光斬 Thunder Slash ── 紫電劃破空間，分叉閃電+畫面撕裂
-function slash4(x, y) {
-  // 分形閃電斬
-  const segs = [];
-  function bolt(x1, y1, x2, y2, d, amp) {
-    if (d === 0 || amp < 1.5) { segs.push({ x1, y1, x2, y2, d }); return; }
-    const mx = (x1+x2)/2 + rr(-amp, amp), my = (y1+y2)/2 + rr(-amp, amp);
-    bolt(x1, y1, mx, my, d-1, amp*.6);
-    bolt(mx, my, x2, y2, d-1, amp*.6);
-    if (Math.random() < .45) bolt(mx, my, mx+rr(-amp*2,amp*2), my+rr(-amp,amp), d-2, amp*.38);
-  }
-  const angle = rr(-.15, .15);
-  const len = Math.max(W, H) * 1.05;
-  const x1 = x - Math.cos(angle)*len/2, y1 = y - Math.sin(angle)*len/2;
-  const x2 = x + Math.cos(angle)*len/2, y2 = y + Math.sin(angle)*len/2;
-  bolt(x1, y1, x2, y2, 7, 55);
-  slashLines.push({ type: 's4', segs, life: 1, decay: .045 });
-  // 主斬線
-  slashLines.push({ type: 's1', layer:0, x1, y1, x2, y2, life:.8, decay:.06, width:6, hue:270, sat:100, lit:85 });
-  // 電弧粒子
-  for (let i = 0; i < 80; i++) {
-    const a = rr(0, tau), sp = rr(2, 14);
-    addP({ x: x+rr(-80,80), y: y+rr(-15,15), vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, hue: rr(260,300), sat:100, lit:85, sz:rr(1,4.5), blur:12, grav:.12, drag:.97, decay:rr(.016,.04) });
-  }
-  // 撕裂裂縫
-  for (let i = 0; i < 5; i++) {
-    const ca = angle + rr(-.3, .3);
-    let pts = [{ x: x+rr(-30,30), y: y+rr(-10,10) }], cx2 = pts[0].x, cy2 = pts[0].y;
-    for (let j = 0; j < ri(3,7); j++) { cx2 += Math.cos(ca+rr(-.5,.5))*rr(20,55); cy2 += Math.sin(ca+rr(-.5,.5))*rr(10,30); pts.push({ x:cx2, y:cy2 }); }
-    cracks.push({ pts, life: 1, decay: .01, hue: 270, width: rr(.5,2) });
-  }
-  flash(.95); shake(18, 15);
-}
+    <!-- Alloc Panel -->
+    <div class="alloc-panel" id="allocPanel">
+    <div class="alloc-title" id="allocTitle">分配屬性點（每點：+5血量 / +1攻擊 / +1防禦）</div>
+      <div class="points-left">剩餘點數：<span id="allocPointsLeft">10</span></div>
+      <div class="alloc-row">
+        <div class="alloc-lbl green">❤ 血量</div>
+        <button class="alloc-btn" onclick="allocAttr('hp',-1)">−</button>
+        <div class="alloc-val green" id="alloc-hp">0</div>
+        <button class="alloc-btn" onclick="allocAttr('hp',1)">+</button>
+        <div class="alloc-hint" id="alloc-hp-total"></div>
+      </div>
+      <div class="alloc-row">
+        <div class="alloc-lbl red">⚔ 攻擊</div>
+        <button class="alloc-btn" onclick="allocAttr('atk',-1)">−</button>
+        <div class="alloc-val red" id="alloc-atk">0</div>
+        <button class="alloc-btn" onclick="allocAttr('atk',1)">+</button>
+        <div class="alloc-hint" id="alloc-atk-total"></div>
+      </div>
+      <div class="alloc-row">
+        <div class="alloc-lbl cyan">🛡 防禦</div>
+        <button class="alloc-btn" onclick="allocAttr('def',-1)">−</button>
+        <div class="alloc-val cyan" id="alloc-def">0</div>
+        <button class="alloc-btn" onclick="allocAttr('def',1)">+</button>
+        <div class="alloc-hint" id="alloc-def-total"></div>
+      </div>
+      <div style="margin-top:16px;text-align:center">
+        <button class="btn btn-primary" onclick="confirmAlloc()" id="confirmAllocBtn">確認屬性，開始戰鬥</button>
+        <div id="allocWaitMsg" class="hidden" style="margin-top:16px;color:var(--text2);font-size:13px;letter-spacing:1px">
+          <div class="spinner" style="width:28px;height:28px;margin:0 auto 8px"></div>
+          等待隊友選擇屬性中...
+        </div>
+      </div>
+    </div>
 
-// ── S5: 虛空斬 Void Slash ── 黑色虛空切割，空間扭曲+異次元粒子湧出
-function slash5(x, y) {
-  const angle = rr(-.1, .1);
-  const len = Math.max(W, H) * 1.1;
-  // 黑色虛空裂縫
-  slashLines.push({
-    type: 's5',
-    x1: x - Math.cos(angle)*len/2, y1: y - Math.sin(angle)*len/2,
-    x2: x + Math.cos(angle)*len/2, y2: y + Math.sin(angle)*len/2,
-    life: 1, decay: .014, angle, cx: x, cy: y, width: 0
-  });
-  // 虛空粒子湧出 (多色異次元)
-  for (let i = 0; i < 90; i++) {
-    const t = i / 90;
-    const px = x + Math.cos(angle) * (t - .5) * len * .9;
-    const py = y + Math.sin(angle) * (t - .5) * len * .9;
-    const perp = angle + Math.PI/2;
-    const side = Math.random() < .5 ? 1 : -1;
-    const sp = rr(1.5, 8);
-    addP({
-      x: px + Math.cos(perp)*side*rr(2,10), y: py + Math.sin(perp)*side*rr(2,10),
-      vx: Math.cos(perp)*side*sp + Math.cos(angle)*rr(-2,2),
-      vy: Math.sin(perp)*side*sp + Math.sin(angle)*rr(-2,2),
-      hue: rr(0,360), sat:100, lit:rr(65,90), sz:rr(1,5), blur:14,
-      grav: .03, drag:.97, decay:rr(.008,.022)
-    });
-  }
-  // 空間扭曲環
-  for (let i = 0; i < 5; i++) ripples.push({ x, y, r: i * 20, life: 1, decay: .012, hue: rr(240,280), delay: i*3, frame:0 });
-  flash(.6); shake(12, 12);
-}
+    <!-- Battle Area -->
+    <div id="battleSection" class="hidden">
+      <div class="turn-indicator" id="turnIndicator">等待中...</div>
+      <div class="battle-area">
+        <div class="team-panel" id="playerTeamPanel">
+          <div class="team-label accent">✦ 我方</div>
+        </div>
+        <div class="vs-badge">VS</div>
+        <div class="team-panel" id="enemyTeamPanel">
+          <div class="team-label red">✦ 敵方</div>
+        </div>
+      </div>
+      <div class="battle-hint" id="battleHint" style="min-height:22px"></div>
+      <div class="battle-log" id="battleLog"></div>
+      <div class="battle-controls" id="battleControls"></div>
+    </div>
+  </div>
+</div>
 
-// ════════════════════════════════════════════════
-//  GHOST EFFECTS  (5種)
-// ════════════════════════════════════════════════
+<!-- MODAL: Create Team -->
+<div id="createTeamModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-title">⚔️ 建立小隊</div>
+    <div class="form-group">
+      <div class="form-label">小隊代碼（4-8字元）</div>
+      <input class="form-input" id="createTeamCode" placeholder="自訂代碼，例：HERO1234" maxlength="8">
+    </div>
+    <div id="createTeamMsg" style="font-size:12px;color:var(--red);margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="doCreateTeam()">建立</button>
+      <button class="btn btn-secondary" onclick="closeModal('createTeamModal')">取消</button>
+    </div>
+  </div>
+</div>
 
-// ── G1: 幽靈纏繞 Wraith Spiral ── 半透明靈體螺旋纏繞上升，帶鬼火軌跡
-function ghost1(x, y) {
-  ghostEntities.push({
-    type: 'g1', x, y, t: 0,
-    arms: Array.from({ length: 3 }, (_, i) => ({
-      phase: i / 3 * tau, radius: rr(40, 80), speed: rr(.02, .04),
-      hue: rr(160, 220), trail: []
-    })),
-    life: 1, decay: .003, maxT: 300
-  });
-  // 初始爆發粒子
-  for (let i = 0; i < 40; i++) {
-    const a = rr(0, tau), sp = rr(1, 5);
-    addP({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 1, hue: rr(160,220), sat:80, lit:75, sz:rr(2,7), blur:10, grav:-.01, drag:.96, decay:rr(.008,.018) });
-  }
-}
+<!-- MODAL: Join Team -->
+<div id="joinTeamModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-title">🔑 加入小隊</div>
+    <div class="form-group">
+      <div class="form-label">小隊代碼</div>
+      <input class="form-input" id="joinTeamCode" placeholder="輸入小隊代碼" maxlength="8">
+    </div>
+    <div id="joinTeamMsg" style="font-size:12px;color:var(--red);margin-top:4px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="doJoinTeam()">加入</button>
+      <button class="btn btn-secondary" onclick="closeModal('joinTeamModal')">取消</button>
+    </div>
+  </div>
+</div>
 
-// ── G2: 骷髏幻影 Skull Phantom ── 巨大鬼臉從地面升起，眼眶發光，慢速消散
-function ghost2(x, y) {
-  ghostEntities.push({ type: 'g2', x, y: H + 60, ty: y, t: 0, life: 1, decay: .004, phase: 0 });
-  // 骷髏崩散粒子
-  for (let i = 0; i < 50; i++) {
-    const a = rr(0, tau), sp = rr(.5, 4);
-    addP({ x: x+rr(-40,40), y: y+rr(-60,20), vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - rr(.5,2), hue: rr(100,160), sat:60, lit:70, sz:rr(1,5), blur:8, grav:-.005, drag:.98, decay:rr(.006,.014), al:.6 });
-  }
-}
+<!-- RESULT OVERLAY -->
+<div id="resultOverlay" class="result-overlay hidden">
+  <div class="result-card">
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-rewards" id="resultRewards"></div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="nextStageBtn" onclick="nextStage()">下一關</button>
+      <button class="btn btn-secondary" onclick="exitGame()">結束遊戲</button>
+    </div>
+  </div>
+</div>
 
-// ── G3: 靈魂漩渦 Soul Vortex ── 多條靈光在點擊處形成漩渦，向內吸噬
-function ghost3(x, y) {
-  ghostEntities.push({
-    type: 'g3', x, y, t: 0, life: 1, decay: .0035,
-    streamers: Array.from({ length: 8 }, (_, i) => ({
-      angle: i / 8 * tau, r: rr(120, 200), speed: rr(.025, .045),
-      hue: rr(200, 300), trail: [], phase: rr(0, tau)
-    }))
-  });
-  for (let i = 0; i < 30; i++) {
-    const a = rr(0, tau), r = rr(60, 180);
-    addP({ x: x + Math.cos(a)*r, y: y + Math.sin(a)*r, vx: -Math.cos(a)*rr(1,3), vy: -Math.sin(a)*rr(1,3), hue: rr(200,280), sat:90, lit:75, sz:rr(1.5,5), blur:10, grav:0, drag:.97, decay:rr(.01,.02) });
-  }
-}
+<!-- IN-GAME TEAM CHAT (floating panel) -->
+<div id="gameChatPanel" class="game-chat-panel hidden">
+  <div class="team-chat-header" onclick="toggleGameChat()">
+    🔗 小隊聊天 <span id="gameChatToggleIcon">▲</span>
+  </div>
+  <div class="team-chat-body">
+    <div id="gameChatMsgs" class="team-chat-msgs"></div>
+    <div class="team-chat-input-row">
+      <input class="team-chat-input" id="gameChatInput" placeholder="輸入訊息..." onkeydown="if(event.key==='Enter'){sendTeamChat('game')}">
+      <button class="btn btn-primary btn-sm" onclick="sendTeamChat('game')">發送</button>
+    </div>
+  </div>
+</div>
 
-// ── G4: 鬼焰爆裂 Ghost Flame Burst ── 幽綠鬼焰從地底噴發，逆重力飄散
-function ghost4(x, y) {
-  ghostEntities.push({
-    type: 'g4', x, y, t: 0, life: 1, decay: .005,
-    columns: Array.from({ length: 12 }, (_, i) => ({
-      x: x + Math.cos(i/12*tau) * rr(0,50),
-      y, speed: rr(2, 5), hue: rr(100,160), phase: rr(0,tau), sz: rr(15,40), active: true
-    }))
-  });
-  // 基底爆發
-  for (let i = 0; i < 60; i++) {
-    const a = rr(0, tau), sp = rr(2, 9);
-    addP({ x: x+rr(-30,30), y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - rr(2,6), hue: rr(100,160), sat:100, lit:65, sz:rr(4,16), blur:16, grav:-.06, drag:.96, decay:rr(.009,.02) });
-  }
-  // 衝擊波
-  for (let i = 0; i < 3; i++) ripples.push({ x, y, r: i*18, life:1, decay:.014, hue:130, delay:i*5, frame:0 });
-}
+<!-- BATTLE EFFECTS CANVAS -->
+<canvas id="fxCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:350;display:none"></canvas>
 
-// ── G5: 幽靈軍團 Phantom Legion ── 多個半透明鬼影從四周湧來，穿越點擊點消散
-function ghost5(x, y) {
-  const n = 8;
-  for (let i = 0; i < n; i++) {
-    const angle = i / n * tau + rr(-.2, .2);
-    const dist = rr(Math.min(W,H)*.35, Math.min(W,H)*.5);
-    ghostEntities.push({
-      type: 'g5',
-      sx: x + Math.cos(angle) * dist, sy: y + Math.sin(angle) * dist,
-      tx: x, ty: y,
-      x: x + Math.cos(angle) * dist, y: y + Math.sin(angle) * dist,
-      hue: rr(160, 260), sz: rr(20, 45),
-      t: 0, speed: rr(.018, .03), life: 1, decay: .006,
-      trail: [], phase: rr(0, tau)
-    });
-  }
-  // 目標點爆發
-  for (let i = 0; i < 30; i++) {
-    const a = rr(0, tau), sp = rr(1, 5);
-    addP({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, hue: rr(160,260), sat:80, lit:75, sz:rr(2,6), blur:10, grav:0, drag:.97, decay:rr(.01,.02) });
-  }
-}
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, push, onValue, off, remove, update, serverTimestamp, query, orderByChild, limitToLast, onChildAdded, onChildRemoved }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// ════════════════════════════════════════════════
-//  DRAW SUBSYSTEMS
-// ════════════════════════════════════════════════
-function drawSlashLines() {
-  slashLines = slashLines.filter(s => {
-    s.life -= s.decay;
-    if (s.life <= 0) return false;
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
+// ===== FIREBASE CONFIG =====
+// IMPORTANT: Replace with your own Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCaWzHzxTte5_o02Opq7002T386pVHTMHY",
+  authDomain: "large-rpg.firebaseapp.com",
+  databaseURL: "https://large-rpg-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "large-rpg",
+  storageBucket: "large-rpg.firebasestorage.app",
+  messagingSenderId: "285439658443",
+  appId: "1:285439658443:web:e0ba91ac0c6725f3464e4e",
+  measurementId: "G-JE1BVYM7P8"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-    if (s.type === 's1') {
-      ctx.globalAlpha = s.life * .9;
-      ctx.strokeStyle = `hsl(${s.hue},${s.sat}%,${s.lit}%)`;
-      ctx.lineWidth = s.width * s.life;
-      ctx.shadowBlur = s.width * 2 * s.life;
-      ctx.shadowColor = ctx.strokeStyle;
-      ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
-    } else if (s.type === 's2') {
-      // Arc slash
-      ctx.globalAlpha = s.life * .85;
-      ctx.strokeStyle = `hsl(${s.hue},${s.sat}%,${s.lit}%)`;
-      ctx.lineWidth = s.width * s.life;
-      ctx.shadowBlur = s.width * 2 * s.life;
-      ctx.shadowColor = ctx.strokeStyle;
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath();
-      s.pts.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
-      ctx.stroke();
-    } else if (s.type === 's4') {
-      // Lightning segments
-      s.segs.forEach(seg => {
-        ctx.globalAlpha = s.life * (seg.d > 4 ? .95 : .45);
-        ctx.strokeStyle = seg.d > 4 ? '#fff' : `hsl(275,100%,80%)`;
-        ctx.lineWidth = seg.d > 4 ? 2.5 : .7;
-        ctx.shadowBlur = seg.d > 4 ? 22 : 7;
-        ctx.shadowColor = '#b088ff';
-        ctx.beginPath(); ctx.moveTo(seg.x1, seg.y1); ctx.lineTo(seg.x2, seg.y2); ctx.stroke();
-      });
-    } else if (s.type === 's5') {
-      // Void slash: expanding dark rift with colored edges
-      s.width = Math.min(s.width + 1.5, 22);
-      // Dark core
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = s.life * .85;
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = s.width * s.life;
-      ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
-      // Glowing edges
-      ctx.globalCompositeOperation = 'screen';
-      for (let side = -1; side <= 1; side += 2) {
-        const perp = s.angle + Math.PI/2;
-        const off = side * s.width * s.life * .6;
-        ctx.strokeStyle = `hsl(${270+T},100%,70%)`;
-        ctx.lineWidth = 2;
-        ctx.shadowBlur = 15; ctx.shadowColor = `hsl(${270+T},100%,70%)`;
-        ctx.globalAlpha = s.life * .8;
-        ctx.beginPath();
-        ctx.moveTo(s.x1 + Math.cos(perp)*off, s.y1 + Math.sin(perp)*off);
-        ctx.lineTo(s.x2 + Math.cos(perp)*off, s.y2 + Math.sin(perp)*off);
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
-    return true;
-  });
-  ctx.shadowBlur = 0;
-}
-
-function drawCracks() {
-  cracks = cracks.filter(c => {
-    c.life -= c.decay;
-    if (c.life <= 0) return false;
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = c.life * .8;
-    ctx.strokeStyle = `hsl(${c.hue},90%,${c.hue === 0 ? 55 : 70}%)`;
-    ctx.lineWidth = c.width * c.life;
-    ctx.shadowBlur = 8 * c.life;
-    ctx.shadowColor = ctx.strokeStyle;
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.beginPath();
-    c.pts.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
-    ctx.stroke();
-    ctx.restore();
-    return true;
-  });
-  ctx.shadowBlur = 0;
-}
-
-function drawRipples() {
-  ripples = ripples.filter(rp => {
-    rp.frame++;
-    if (rp.frame < rp.delay) return true;
-    rp.r += 5; rp.life -= rp.decay;
-    if (rp.life <= 0) return false;
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = rp.life * .75;
-    ctx.strokeStyle = `hsl(${rp.hue},85%,68%)`;
-    ctx.lineWidth = 2 * rp.life;
-    ctx.shadowBlur = 14; ctx.shadowColor = ctx.strokeStyle;
-    ctx.beginPath(); ctx.arc(rp.x, rp.y, rp.r, 0, tau); ctx.stroke();
-    ctx.restore();
-    ctx.shadowBlur = 0;
-    return true;
-  });
-}
-
-function drawAfterImages() {
-  afterImages = afterImages.filter(ai => {
-    ai.life -= ai.decay;
-    if (ai.life <= 0) return false;
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = ai.life * .35;
-    if (ai.type === 's2') {
-      const arcSpan = Math.PI * .9;
-      const n = 30;
-      ctx.strokeStyle = `hsl(200,80%,65%)`;
-      ctx.lineWidth = 4 * ai.life;
-      ctx.shadowBlur = 12; ctx.shadowColor = ctx.strokeStyle;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      for (let i = 0; i <= n; i++) {
-        const a = ai.baseAngle + ai.offset - arcSpan/2 + arcSpan*i/n;
-        const px = ai.x + Math.cos(a)*ai.arcR, py = ai.y + Math.sin(a)*ai.arcR;
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
-    ctx.shadowBlur = 0;
-    return true;
-  });
-}
-
-function drawGhosts() {
-  ghostEntities = ghostEntities.filter(g => {
-    g.life -= g.decay; g.t++;
-    if (g.life <= 0) return false;
-
-    if (g.type === 'g1') {
-      // Wraith spiral
-      g.arms.forEach(arm => {
-        arm.phase += arm.speed;
-        const px = g.x + Math.cos(arm.phase) * arm.radius * g.life;
-        const py = g.y + Math.sin(arm.phase) * arm.radius * g.life - g.t * .4;
-        arm.trail.push({ x: px, y: py });
-        if (arm.trail.length > 35) arm.trail.shift();
-        // Draw trail
-        for (let i = 1; i < arm.trail.length; i++) {
-          const a = i / arm.trail.length;
-          ctx.save();
-          ctx.globalCompositeOperation = 'screen';
-          ctx.globalAlpha = a * g.life * .7;
-          ctx.strokeStyle = `hsl(${arm.hue + i * 2},80%,70%)`;
-          ctx.lineWidth = a * 4 * g.life;
-          ctx.shadowBlur = 12 * a;
-          ctx.shadowColor = ctx.strokeStyle;
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(arm.trail[i-1].x, arm.trail[i-1].y);
-          ctx.lineTo(arm.trail[i].x, arm.trail[i].y);
-          ctx.stroke();
-          ctx.restore();
-        }
-        // Head glow
-        const grad = ctx.createRadialGradient(px,py,0,px,py,12*g.life);
-        grad.addColorStop(0, `hsla(${arm.hue},100%,90%,.9)`);
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        ctx.globalAlpha = g.life * .8;
-        ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.arc(px,py,12*g.life,0,tau); ctx.fill();
-        ctx.restore();
-        // Spawn orb particles
-        if (g.t % 3 === 0) addP({ x:px, y:py, vx:rr(-1,1), vy:rr(-2,-.5), hue:arm.hue, sat:80, lit:78, sz:rr(2,5), blur:8, grav:-.005, drag:.98, decay:rr(.01,.02) });
-      });
-      ctx.shadowBlur = 0;
-    }
-
-    else if (g.type === 'g2') {
-      // Skull phantom rising
-      g.y = lerp(g.y, g.ty, .04);
-      g.phase += .05;
-      const cx = g.x, cy = g.y;
-      const sc = g.life;
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      ctx.globalAlpha = g.life * .75;
-      // Skull body glow
-      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80*sc);
-      grd.addColorStop(0, `hsla(130,70%,55%,.6)`);
-      grd.addColorStop(.5, `hsla(140,80%,40%,.3)`);
-      grd.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(cx,cy,80*sc,0,tau); ctx.fill();
-      // Skull outline (simple geometric)
-      ctx.strokeStyle = `hsl(130,70%,60%)`;
-      ctx.lineWidth = 2 * sc;
-      ctx.shadowBlur = 18; ctx.shadowColor = '#4ffa88';
-      // Head
-      ctx.beginPath(); ctx.ellipse(cx, cy-10*sc, 38*sc, 42*sc, 0, 0, tau); ctx.stroke();
-      // Jaw
-      ctx.beginPath(); ctx.ellipse(cx, cy+28*sc, 30*sc, 18*sc, 0, 0, tau); ctx.stroke();
-      // Eyes
-      const eyePulse = .5 + .5*Math.sin(g.phase*3);
-      ctx.fillStyle = `hsl(130,100%,${60+eyePulse*30}%)`;
-      ctx.shadowBlur = 20 * eyePulse; ctx.shadowColor = '#afffcc';
-      ctx.beginPath(); ctx.ellipse(cx-14*sc, cy-14*sc, 10*sc*eyePulse, 12*sc*eyePulse, 0, 0, tau); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx+14*sc, cy-14*sc, 10*sc*eyePulse, 12*sc*eyePulse, 0, 0, tau); ctx.fill();
-      // Nose cavity
-      ctx.strokeStyle = `hsl(130,60%,50%)`; ctx.lineWidth = 1.5*sc; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.moveTo(cx-5*sc, cy+4*sc); ctx.lineTo(cx, cy-4*sc); ctx.lineTo(cx+5*sc, cy+4*sc); ctx.stroke();
-      ctx.restore();
-      ctx.shadowBlur = 0;
-      // Smoke particles from top
-      if (g.t % 4 === 0) addP({ x:cx+rr(-20,20), y:cy-40*sc, vx:rr(-.5,.5), vy:rr(-1,-.3), hue:130, sat:60, lit:70, sz:rr(5,15), blur:10, grav:0, drag:.97, decay:rr(.008,.015), al:.5 });
-    }
-
-    else if (g.type === 'g3') {
-      // Soul vortex
-      g.streamers.forEach(st => {
-        st.angle -= st.speed;
-        st.phase += .03;
-        const decay = Math.max(.1, g.life);
-        const r = st.r * decay * (.8 + .2*Math.sin(st.phase));
-        const px = g.x + Math.cos(st.angle) * r;
-        const py = g.y + Math.sin(st.angle) * r;
-        st.trail.push({ x:px, y:py });
-        if (st.trail.length > 30) st.trail.shift();
-        for (let i = 1; i < st.trail.length; i++) {
-          const a = i / st.trail.length;
-          ctx.save();
-          ctx.globalCompositeOperation = 'screen';
-          ctx.globalAlpha = a * g.life * .65;
-          ctx.strokeStyle = `hsl(${st.hue + i*3 + T*.5},90%,70%)`;
-          ctx.lineWidth = a * 5 * g.life;
-          ctx.shadowBlur = 14 * a; ctx.shadowColor = ctx.strokeStyle;
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(st.trail[i-1].x, st.trail[i-1].y);
-          ctx.lineTo(st.trail[i].x, st.trail[i].y);
-          ctx.stroke();
-          ctx.restore();
-        }
-        // Pulse orb at tip
-        if (g.t % 4 === 0) addP({ x:px, y:py, vx:(g.x-px)*.04, vy:(g.y-py)*.04, hue:st.hue, sat:90, lit:75, sz:rr(2,6), blur:10, grav:0, drag:.96, decay:rr(.012,.022) });
-      });
-      // Core vortex glow
-      const cGrad = ctx.createRadialGradient(g.x,g.y,0,g.x,g.y,35*g.life);
-      cGrad.addColorStop(0, `rgba(200,180,255,${g.life*.7})`);
-      cGrad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      ctx.fillStyle = cGrad;
-      ctx.beginPath(); ctx.arc(g.x,g.y,35*g.life,0,tau); ctx.fill();
-      ctx.restore();
-      ctx.shadowBlur = 0;
-    }
-
-    else if (g.type === 'g4') {
-      // Ghost flame burst
-      g.columns = g.columns.filter(col => {
-        if (!col.active) return false;
-        col.y -= col.speed;
-        col.phase += .08;
-        col.sz = Math.max(2, col.sz * .995);
-        if (col.y < -80) { col.active = false; return false; }
-        const wobble = Math.sin(col.phase) * 8;
-        const cx2 = col.x + wobble;
-        // Flame column
-        const grad = ctx.createRadialGradient(cx2, col.y, 0, cx2, col.y, col.sz * g.life);
-        grad.addColorStop(0, `hsla(${col.hue+30},100%,85%,${g.life*.9})`);
-        grad.addColorStop(.4, `hsla(${col.hue},100%,55%,${g.life*.6})`);
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.ellipse(cx2, col.y, col.sz*.55*g.life, col.sz*g.life, 0, 0, tau); ctx.fill();
-        ctx.restore();
-        // Spawn particles
-        if (g.t % 3 === 0) addP({ x:cx2+rr(-8,8), y:col.y+rr(-5,10), vx:rr(-.8,.8)+wobble*.05, vy:rr(-2,-.3), hue:col.hue, sat:100, lit:65, sz:rr(2,8), blur:10, grav:-.04, drag:.97, decay:rr(.01,.022) });
-        return true;
-      });
-      ctx.shadowBlur = 0;
-    }
-
-    else if (g.type === 'g5') {
-      // Phantom legion: move toward target
-      const dx = g.tx - g.x, dy = g.ty - g.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist > 8) {
-        g.x += dx * g.speed; g.y += dy * g.speed;
-      } else {
-        // Reached center: burst
-        for (let i = 0; i < 20; i++) {
-          const a = rr(0, tau), sp = rr(2, 8);
-          addP({ x:g.x, y:g.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, hue:g.hue, sat:80, lit:75, sz:rr(2,6), blur:10, grav:0, drag:.97, decay:rr(.02,.04) });
-        }
-        return false;
-      }
-      g.phase = (g.phase||0) + .06;
-      g.trail = g.trail || [];
-      g.trail.push({ x:g.x, y:g.y });
-      if (g.trail.length > 22) g.trail.shift();
-      // Draw trail
-      for (let i = 1; i < g.trail.length; i++) {
-        const a = i / g.trail.length;
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        ctx.globalAlpha = a * g.life * .5;
-        ctx.fillStyle = `hsl(${g.hue},80%,70%)`;
-        ctx.shadowBlur = 8; ctx.shadowColor = ctx.fillStyle;
-        ctx.beginPath(); ctx.arc(g.trail[i].x, g.trail[i].y, a * g.sz * .4, 0, tau); ctx.fill();
-        ctx.restore();
-      }
-      // Ghost body
-      const pulse = .75 + .25 * Math.sin(g.phase);
-      const grd = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.sz * pulse);
-      grd.addColorStop(0, `hsla(${g.hue},80%,88%,${g.life*.8})`);
-      grd.addColorStop(.45, `hsla(${g.hue},75%,60%,${g.life*.45})`);
-      grd.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      ctx.shadowBlur = 18 * g.life; ctx.shadowColor = `hsl(${g.hue},80%,65%)`;
-      ctx.fillStyle = grd;
-      ctx.beginPath(); ctx.arc(g.x, g.y, g.sz * pulse, 0, tau); ctx.fill();
-      ctx.restore();
-      ctx.shadowBlur = 0;
-    }
-
-    return true;
-  });
-}
-
-// ════════════════════════════════════════════════
-//  MAIN LOOP
-// ════════════════════════════════════════════════
-function loop() {
-  requestAnimationFrame(loop);
-  T++;
-
-  // Shake
-  if (shakeF > 0) {
-    shakeX = rr(-shakeMag, shakeMag); shakeY = rr(-shakeMag, shakeMag);
-    shakeF--;
-    if (!shakeF) { shakeX = 0; shakeY = 0; }
-  }
-
-  ctx.save();
-  if (shakeX || shakeY) ctx.translate(shakeX, shakeY);
-
-  // Background fade (motion blur)
-  ctx.globalAlpha = .14;
-  ctx.fillStyle = '#06070f';
-  ctx.fillRect(-10, -10, W+20, H+20);
-  ctx.globalAlpha = 1;
-
-  // Draw everything
-  drawSlashLines();
-  drawCracks();
-  drawRipples();
-  drawAfterImages();
-  drawGhosts();
-  tickParticles();
-
-  // Flash
-  if (flashLife > 0) {
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = flashLife;
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, W, H);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1;
-    flashLife = Math.max(0, flashLife - .07);
-  }
-
-  ctx.restore();
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.globalAlpha = 1;
-  ctx.shadowBlur = 0;
-}
-loop();
-
-// ════════════════════════════════════════════════
-//  UI & INPUT
-// ════════════════════════════════════════════════
-const SLASH_FX = [
-  { id:'s1', ic:'⚡', label:'天斬', fn: slash1 },
-  { id:'s2', ic:'🌙', label:'月牙斬', fn: slash2 },
-  { id:'s3', ic:'🩸', label:'血斬', fn: slash3 },
-  { id:'s4', ic:'🔮', label:'電光斬', fn: slash4 },
-  { id:'s5', ic:'🕳️', label:'虛空斬', fn: slash5 },
+// ===== CONSTANTS =====
+const RANKS = [
+  {name:'黑鐵',key:'鐵',exp:0,hp:5,atk:0,def:0},
+  {name:'青銅',key:'銅',exp:1000,hp:6,atk:1,def:0},
+  {name:'白銀',key:'銀',exp:10000,hp:7,atk:1,def:1},
+  {name:'黃金',key:'金',exp:100000,hp:9,atk:2,def:2},
+  {name:'白金',key:'白金',exp:1000000,hp:12,atk:3,def:3},
+  {name:'鑽石',key:'鑽',exp:10000000,hp:16,atk:4,def:4},
+  {name:'翡翠',key:'翡',exp:100000000,hp:21,atk:5,def:5},
+  {name:'曜石',key:'曜',exp:1000000000,hp:27,atk:6,def:6},
+  {name:'隕鐵',key:'隕',exp:10000000000,hp:34,atk:7,def:7},
+  {name:'星岩',key:'岩',exp:100000000000,hp:40,atk:10,def:10}
 ];
-const GHOST_FX = [
-  { id:'g1', ic:'🌀', label:'幽靈纏繞', fn: ghost1 },
-  { id:'g2', ic:'💀', label:'骷髏幻影', fn: ghost2 },
-  { id:'g3', ic:'🌌', label:'靈魂漩渦', fn: ghost3 },
-  { id:'g4', ic:'🔥', label:'鬼焰爆裂', fn: ghost4 },
-  { id:'g5', ic:'👻', label:'幽靈軍團', fn: ghost5 },
+const STAGE_CONFIG = [
+  {stage:1,playerPts:10,monsterPts:10,exp:100,gold:100},
+  {stage:2,playerPts:5,monsterPts:16,exp:250,gold:300},
+  {stage:3,playerPts:5,monsterPts:22,exp:500,gold:650},
+  {stage:4,playerPts:10,monsterPts:35,exp:1500,gold:2500},
+  {stage:5,playerPts:10,monsterPts:50,exp:5000,gold:9000},
+  {stage:6,playerPts:10,monsterPts:70,exp:10000,gold:20000}
+];
+const SKILLS_DEF = [
+  {id:'反傷',   name:'反傷',   desc:'受到傷害時，將傷害的5%返還給攻擊者（最低1點）。每升1級+7%。',                                  baseCost:1000,  maxLvOverride:null, costMult:15},
+  {id:'爆擊',   name:'爆擊',   desc:'每次攻擊有10%機率造成120%傷害。每升1級各+5%機率和+5%傷害。',                                  baseCost:1000,  maxLvOverride:null, costMult:15},
+  {id:'二連斬', name:'二連斬', desc:'每次攻擊有5%機率再斬一刀（兩刀皆可觸發爆擊）。每升1級+5%機率。',                              baseCost:1000,  maxLvOverride:null, costMult:15},
+  {id:'不死鳥', name:'不死鳥', desc:'遭遇致命攻擊時，留下1HP繼續戰鬥。一關可觸發1次（2級:2次 / 3級:3次）。滿級3級。',             baseCost:10000, maxLvOverride:3,    costMult:null, fixedCosts:[10000,1000000,100000000]},
+  {id:'暴徒',   name:'暴徒',   desc:'血量低於20%時傷害+50%，攻擊特效變為紅色斬擊。每升1級額外+15%傷害加成。',                      baseCost:1000,  maxLvOverride:null, costMult:10},
+  {id:'致命一擊',name:'致命一擊',desc:'每次攻擊有1%機率讓對手瞬間喪命（特效炸裂）。每升1級+1%機率。',                             baseCost:1000,  maxLvOverride:null, costMult:10},
+  {id:'絕對防禦',name:'絕對防禦',desc:'每次受到攻擊有5%機率完全免疫傷害。每升1級+5%機率。',                                       baseCost:1000,  maxLvOverride:null, costMult:10},
+  {id:'蠻力',   name:'蠻力',   desc:'每擁有15HP，攻擊+1（動態計算）。每升1級，每15HP獲得的攻擊加成+1。',                          baseCost:10000, maxLvOverride:null, costMult:10},
 ];
 
-let activeFn = null;
-let activeBtn = null;
+// ===== STATE =====
+window.G = {
+  uid: null, // use nickname as uid
+  player: null,
+  currentTab: 'home',
+  matchRef: null,
+  matchTimer: null,
+  matchCountdown: null,
+  teamId: null,
+  teamRef: null,
+  globalChatRef: null,
+  teamChatRef: null,
+  listeners: {},
+  // game state
+  gameState: null,
+};
 
-function buildButtons(fxList, containerId, cls) {
-  const row = document.getElementById(containerId);
-  fxList.forEach(fx => {
-    const btn = document.createElement('button');
-    btn.className = cls;
-    btn.innerHTML = `<span class="ic">${fx.ic}</span>${fx.label}`;
-    btn.addEventListener('click', () => {
-      activeFn = fx.fn;
-      document.querySelectorAll('button').forEach(b => b.classList.remove('on'));
-      btn.classList.add('on');
-    });
-    row.appendChild(btn);
+// ===== HELPERS =====
+function getRankIndex(exp) {
+  let idx = 0;
+  for (let i = RANKS.length-1; i >= 0; i--) {
+    if (exp >= RANKS[i].exp) { idx = i; break; }
+  }
+  return idx;
+}
+function getRank(exp) { return RANKS[getRankIndex(exp)]; }
+function getRankColor(key) {
+  const map = {'鐵':'#9e9e9e','銅':'#cd7f32','銀':'#c0c0c0','金':'#ffd700','白金':'#a8d8ea','鑽':'#b9f2ff','翡':'#00a86b','曜':'#7b5ea7','隕':'#ff6b35','岩':'#f9ca24'};
+  return map[key] || '#fff';
+}
+function skillUpgradeCost(sd, level) {
+  // level = current level, returns cost to go from level → level+1
+  if (sd.fixedCosts) return sd.fixedCosts[level] ?? Infinity;
+  const mult = sd.costMult ?? 15;
+  if (level === 0) return sd.baseCost;
+  return Math.round(sd.baseCost * Math.pow(mult, level));
+}
+function getSkillMaxLevel(exp, sd) {
+  const rankCap = getRankIndex(exp) + 1;
+  if (sd && sd.maxLvOverride !== null && sd.maxLvOverride !== undefined) {
+    return Math.min(sd.maxLvOverride, rankCap);
+  }
+  return rankCap;
+}
+function rollMonsterStats(pts) {
+  // Each point randomly becomes: +5 hp, or +1 atk, or +1 def
+  let hpPts = 0, atk = 0, def = 0;
+  for (let i = 0; i < pts; i++) {
+    const r = Math.floor(Math.random() * 3);
+    if (r === 0) hpPts++;
+    else if (r === 1) atk++;
+    else def++;
+  }
+  const hp = Math.max(5, hpPts * 5);
+  return {hp, atk, def, maxHp: hp};
+}
+function botStats(rankOffset, playerExp) {
+  let rankIdx = getRankIndex(playerExp);
+  rankIdx = Math.max(0, Math.min(RANKS.length-1, rankIdx + rankOffset));
+  const r = RANKS[rankIdx];
+  return {name:'人機', isBot:true, rankKey:r.key, rankName:r.name, hp:r.hp, maxHp:r.hp, atk:r.atk, def:r.def, exp:RANKS[rankIdx].exp, skills:{}};
+}
+function notify(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `notif notif-${type}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+function showMsg(id, msg, type='err') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = type === 'ok' ? 'ok-msg' : 'err-msg';
+  el.textContent = msg;
+}
+window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+window.openModal  = (id) => document.getElementById(id).classList.remove('hidden');
+function fmtBig(n) {
+  if (n >= 1e11) return (n/1e11).toFixed(0)+'千億';
+  if (n >= 1e10) return (n/1e10).toFixed(0)+'百億';
+  if (n >= 1e8) return (n/1e8).toFixed(1)+'億';
+  if (n >= 1e4) return (n/1e4).toFixed(1)+'萬';
+  return String(n);
+}
+
+// ===== AUTH =====
+window.switchAuthTab = (tab) => {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
+};
+
+window.doRegister = async () => {
+  const name = document.getElementById('regName').value.trim();
+  const pass = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
+  if (!name || name.length < 2 || name.length > 12) return showMsg('registerMsg','暱稱需2-12字元');
+  if (!pass || pass.length < 4) return showMsg('registerMsg','密碼需4字元以上');
+  if (pass !== pass2) return showMsg('registerMsg','兩次密碼不同');
+  const snap = await get(ref(db, `players/${name}`));
+  if (snap.exists()) return showMsg('registerMsg','此暱稱已被使用');
+  const newPlayer = {name, password: btoa(pass), exp:0, gold:0, skills:{}, friends:{}, createdAt:Date.now()};
+  await set(ref(db, `players/${name}`), newPlayer);
+  showMsg('registerMsg','註冊成功！請登入', 'ok');
+  setTimeout(() => switchAuthTab('login'), 1200);
+};
+
+window.doLogin = async () => {
+  const name = document.getElementById('loginName').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (!name || !pass) return showMsg('loginMsg','請輸入暱稱和密碼');
+  const snap = await get(ref(db, `players/${name}`));
+  if (!snap.exists()) return showMsg('loginMsg','帳號不存在');
+  const data = snap.val();
+  if (data.password !== btoa(pass)) return showMsg('loginMsg','密碼錯誤');
+  G.uid = name;
+  G.player = data;
+  enterMain();
+};
+
+window.doLogout = () => {
+  remove(ref(db, `online/${G.uid}`));
+  cleanupListeners();
+  G.uid = null; G.player = null;
+  document.getElementById('mainScreen').classList.add('hidden');
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('authScreen').classList.add('active');
+};
+
+// ===== MAIN =====
+function enterMain() {
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('authScreen').classList.remove('active');
+  document.getElementById('mainScreen').classList.remove('hidden');
+  document.getElementById('mainScreen').classList.add('active');
+  // Write online presence
+  set(ref(db, `online/${G.uid}`), { name: G.uid, ts: Date.now() });
+  updateUI();
+  setupGlobalChat();
+  setupFriendListeners();
+  switchTab('home');
+}
+
+function updateUI() {
+  const p = G.player;
+  const rank = getRank(p.exp || 0);
+  const idx = getRankIndex(p.exp || 0);
+  const color = getRankColor(rank.key);
+  document.getElementById('tb-name').textContent = p.name;
+  document.getElementById('tb-gold').textContent = (p.gold||0).toLocaleString();
+  document.getElementById('tb-exp').textContent = fmtBig(p.exp||0);
+  document.getElementById('tb-rank').textContent = rank.name;
+  document.getElementById('tb-rank').style.background = color + '33';
+  document.getElementById('tb-rank').style.color = color;
+  document.getElementById('tb-rank').style.border = `1px solid ${color}66`;
+  // home
+  document.getElementById('rank-name-big').textContent = rank.name;
+  document.getElementById('rank-name-big').style.color = color;
+  const nextExp = idx < RANKS.length-1 ? RANKS[idx+1].exp : p.exp;
+  const curExp = RANKS[idx].exp;
+  const pct = idx >= RANKS.length-1 ? 100 : Math.floor((p.exp - curExp)/(nextExp-curExp)*100);
+  document.getElementById('rank-exp-text').textContent = `${fmtBig(p.exp||0)} / ${fmtBig(nextExp)} EXP`;
+  document.getElementById('rank-progress').style.width = pct + '%';
+  document.getElementById('stat-hp').textContent = rank.hp;
+  document.getElementById('stat-atk').textContent = rank.atk;
+  document.getElementById('stat-def').textContent = rank.def;
+  document.getElementById('stat-gold').textContent = (p.gold||0).toLocaleString();
+  // home skills
+  const skills = p.skills || {};
+  const skillsEl = document.getElementById('home-skills-list');
+  let html = '';
+  for (const sid of Object.keys(skills)) {
+    const lv = skills[sid];
+    const sd = SKILLS_DEF.find(s => s.id === sid);
+    if (sd && lv > 0) html += `<span style="margin-right:16px">【${sd.name} Lv.${lv}】</span>`;
+  }
+  skillsEl.innerHTML = html || '<span>尚未擁有技能</span>';
+}
+
+window.switchTab = (tab) => {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content > div').forEach(d => d.classList.add('hidden'));
+  const tabs = ['home','play','skills','friends','leaderboard','globalChat'];
+  const idx = tabs.indexOf(tab);
+  if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.remove('hidden');
+  G.currentTab = tab;
+  if (tab === 'skills') renderSkillsTab();
+  if (tab === 'leaderboard') loadLeaderboard();
+  if (tab === 'friends') {
+    renderFriends();
+    // Clear any previous interval
+    if (G._friendsRefreshInterval) clearInterval(G._friendsRefreshInterval);
+    G._friendsRefreshInterval = setInterval(() => {
+      if (G.currentTab === 'friends') renderFriends();
+      else clearInterval(G._friendsRefreshInterval);
+    }, 15000);
+  } else {
+    if (G._friendsRefreshInterval) { clearInterval(G._friendsRefreshInterval); G._friendsRefreshInterval = null; }
+  }
+};
+
+// ===== SKILLS TAB =====
+function renderSkillsTab() {
+  const p = G.player;
+  const rankIdx = getRankIndex(p.exp || 0);
+  const rank = RANKS[rankIdx];
+  const nextRank = rankIdx < RANKS.length-1 ? RANKS[rankIdx+1] : null;
+  const globalMaxLv = rankIdx + 1;
+
+  let bannerHtml = `<div class="card" style="margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div>
+      <div class="card-title" style="margin-bottom:4px">技能等級上限</div>
+      <div style="font-size:22px;font-weight:900;font-family:monospace;color:var(--accent)">Lv.${globalMaxLv}</div>
+    </div>
+    <div style="flex:1;font-size:12px;color:var(--text2);line-height:2">
+      目前等級：<span style="color:${getRankColor(rank.key)};font-weight:700">${rank.name}</span>（第 ${rankIdx+1} 階）<br>
+      ${nextRank ? `升至 <span style="color:${getRankColor(nextRank.key)};font-weight:700">${nextRank.name}</span> 後，技能上限提升至 <span style="color:var(--accent)">Lv.${globalMaxLv+1}</span>` : '<span style="color:var(--gold)">已達最高等級</span>'}
+    </div>
+  </div>`;
+
+  let skillsHtml = '';
+  for (const sd of SKILLS_DEF) {
+    const curLv = (p.skills || {})[sd.id] || 0;
+    const maxLv = getSkillMaxLevel(p.exp||0, sd);
+    const atCap = curLv >= maxLv;
+    const upgradeCost = atCap ? null : skillUpgradeCost(sd, curLv);
+    const canAfford = upgradeCost !== null && (p.gold||0) >= upgradeCost;
+
+    let statusTag = '';
+    if (atCap) statusTag = `<span style="background:#e8c84a22;color:var(--gold);border:1px solid #e8c84a44;border-radius:6px;padding:2px 8px;font-size:11px">${sd.maxLvOverride ? '已達技能滿級' : '已達等級上限'}</span>`;
+    else if (!canAfford) statusTag = `<span style="background:#e0555522;color:var(--red);border:1px solid #e0555544;border-radius:6px;padding:2px 8px;font-size:11px">金幣不足</span>`;
+    else statusTag = `<span style="background:#4ec97a22;color:var(--green);border:1px solid #4ec97a44;border-radius:6px;padding:2px 8px;font-size:11px">${curLv===0?'可購買':'可升級'}</span>`;
+
+    skillsHtml += `<div class="skill-card">
+      <div class="skill-name">${sd.name}</div>
+      <div class="skill-desc">${sd.desc}</div>
+      <div class="skill-level">
+        <div class="skill-lvl-badge">Lv.${curLv}</div>
+        <div class="skill-cap">/ 上限 Lv.${maxLv}${sd.maxLvOverride?'（技能滿級）':''}</div>
+        <div style="margin-left:auto">${statusTag}</div>
+      </div>
+      <div class="skill-cost" style="margin-bottom:10px">
+        ${atCap
+          ? `<span style="color:var(--text3)">${sd.maxLvOverride ? '此技能已達滿級' : `升至下一等級（${nextRank?nextRank.name:'已滿'}）後可繼續升級`}</span>`
+          : `升級費用：💰 <strong>${upgradeCost.toLocaleString()}</strong>　擁有：💰 ${(p.gold||0).toLocaleString()}`
+        }
+      </div>
+      <button class="btn ${canAfford && !atCap ? 'btn-gold' : 'btn-secondary'} btn-sm" onclick="upgradeSkill('${sd.id}')">
+        ${curLv === 0 ? '💰 購買' : '⬆ 升級'}
+      </button>
+    </div>`;
+  }
+  document.getElementById('skills-grid').innerHTML = bannerHtml + `<div class="skills-grid">${skillsHtml}</div>`;
+}
+
+window.upgradeSkill = async (sid) => {
+  const p = G.player;
+  const sd = SKILLS_DEF.find(s => s.id === sid);
+  if (!sd) return;
+  const rankIdx = getRankIndex(p.exp || 0);
+  const nextRank = rankIdx < RANKS.length-1 ? RANKS[rankIdx+1] : null;
+  const maxLv = getSkillMaxLevel(p.exp||0, sd);
+  const curLv = (p.skills || {})[sid] || 0;
+  if (curLv >= maxLv) {
+    if (sd.maxLvOverride !== null && sd.maxLvOverride !== undefined && curLv >= sd.maxLvOverride) {
+      notify('此技能已達滿級！', 'err'); return;
+    }
+    notify(nextRank ? `技能已達等級上限！升至${nextRank.name}後可繼續升級` : '技能已達最高等級上限', 'err');
+    return;
+  }
+  const cost = skillUpgradeCost(sd, curLv);
+  if ((p.gold||0) < cost) {
+    notify(`金幣不足！需要 ${cost.toLocaleString()}，目前只有 ${(p.gold||0).toLocaleString()}`, 'err');
+    return;
+  }
+  const newSkills = { ...(p.skills||{}), [sid]: curLv+1 };
+  const newGold = (p.gold||0) - cost;
+  await update(ref(db, `players/${G.uid}`), { skills: newSkills, gold: newGold });
+  G.player.skills = newSkills;
+  G.player.gold = newGold;
+  updateUI();
+  renderSkillsTab();
+  notify(`${sid} 升至 Lv.${curLv+1}！`, 'ok');
+};
+
+// ===== FRIENDS =====
+function setupFriendListeners() {
+  const fReqRef = ref(db, `friendRequests/${G.uid}`);
+  G.listeners.friendReq = onValue(fReqRef, snap => {
+    const data = snap.val() || {};
+    const keys = Object.keys(data);
+    const el = document.getElementById('friendRequests');
+    el.classList.toggle('hidden', keys.length === 0);
+    let html = '';
+    for (const k of keys) {
+      html += `<div class="friend-item">
+        <div><div class="friend-name">${k}</div><div class="friend-rank">邀請你成為好友</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-primary btn-sm" onclick="acceptFriend('${k}')">接受</button>
+          <button class="btn btn-secondary btn-sm" onclick="declineFriend('${k}')">拒絕</button>
+        </div>
+      </div>`;
+    }
+    document.getElementById('friendReqList').innerHTML = html;
+  });
+
+  // Listen for team invites
+  const inviteRef = ref(db, `teamInvites/${G.uid}`);
+  G.listeners.teamInvites = onChildAdded(inviteRef, async snap => {
+    const invite = snap.val();
+    if (!invite) return;
+    const inviteKey = snap.key;
+    // Remove invite immediately so it doesn't fire again on reconnect
+    remove(ref(db, `teamInvites/${G.uid}/${inviteKey}`));
+    // Show invite notification
+    showTeamInviteNotif(invite.from, invite.roomId);
   });
 }
-buildButtons(SLASH_FX, 'slashRow', 'slash-btn');
-buildButtons(GHOST_FX, 'ghostRow', 'ghost-btn');
 
-// Canvas tap
-const cvEl = document.getElementById('c');
-function getPos(e) {
-  const rect = cvEl.getBoundingClientRect();
-  const src = e.touches ? e.touches[0] : e;
-  return {
-    x: (src.clientX - rect.left) * (W / rect.width),
-    y: (src.clientY - rect.top) * (H / rect.height)
+function showTeamInviteNotif(from, roomId) {
+  // Create a persistent invite toast
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;top:20px;right:20px;z-index:1001;background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:16px 20px;max-width:300px;box-shadow:0 4px 24px #00000099;animation:slideIn .3s ease`;
+  el.innerHTML = `
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px">🔗 組隊邀請</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px"><span style="color:var(--accent)">${from}</span> 邀請你加入小隊</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" id="acceptInvite_${roomId}">接受</button>
+      <button class="btn btn-secondary btn-sm" id="declineInvite_${roomId}">拒絕</button>
+    </div>`;
+  document.body.appendChild(el);
+  const remove_ = () => { try { el.remove(); } catch(e){} };
+  document.getElementById(`acceptInvite_${roomId}`).onclick = async () => {
+    remove_();
+    // Check room still exists and is waiting
+    const snap = await get(ref(db, `rooms/${roomId}`));
+    if (!snap.exists()) { notify('小隊已解散或已開始遊戲', 'err'); return; }
+    const room = snap.val();
+    if (room.status !== 'waiting') { notify('小隊已開始遊戲，無法加入', 'err'); return; }
+    closeModal('createTeamModal');
+    closeModal('joinTeamModal');
+    G.teamId = roomId;
+    await joinRoom(roomId);
+    notify(`已加入 ${from} 的小隊！`, 'ok');
   };
+  document.getElementById(`declineInvite_${roomId}`).onclick = remove_;
+  // Auto-dismiss after 30 seconds
+  setTimeout(remove_, 30000);
 }
-cvEl.addEventListener('pointerdown', e => {
-  e.preventDefault();
-  if (!activeFn) return;
-  const { x, y } = getPos(e);
-  activeFn(x, y);
-}, { passive: false });
 
-// Prevent scroll
-document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+window.inviteFriend = async (toName) => {
+  if (!G.teamId) { notify('請先建立小隊', 'err'); return; }
+  if (G.gameState) { notify('遊戲進行中無法邀請', 'err'); return; }
+  await set(ref(db, `teamInvites/${toName}/${G.uid}`), {
+    from: G.uid,
+    roomId: G.teamId,
+    ts: Date.now()
+  });
+  notify(`已向 ${toName} 發送組隊邀請`, 'ok');
+};
+
+window.renderFriends = async () => {
+  const friends = G.player.friends || {};
+  const keys = Object.keys(friends);
+  if (keys.length === 0) {
+    document.getElementById('friendsList').innerHTML = '<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px">尚無好友</div>';
+    return;
+  }
+  // Fetch online status and player info in parallel
+  const [onlineSnap, ...playerSnaps] = await Promise.all([
+    get(ref(db, 'online')),
+    ...keys.map(k => get(ref(db, `players/${k}`)))
+  ]);
+  const online = onlineSnap.exists() ? onlineSnap.val() : {};
+  let html = '';
+  keys.forEach((k, i) => {
+    const snap = playerSnaps[i];
+    if (!snap.exists()) return;
+    const fp = snap.val();
+    const rank = getRank(fp.exp||0);
+    const color = getRankColor(rank.key);
+    const isOnline = !!online[k];
+    const canInvite = isOnline && G.teamId && !G.gameState;
+    html += `<div class="friend-item">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${isOnline?'var(--green)':'var(--text3)'};flex-shrink:0" title="${isOnline?'在線':'離線'}"></div>
+        <div>
+          <div class="friend-name">${k} <span style="font-size:10px;color:${isOnline?'var(--green)':'var(--text3)'}">${isOnline?'在線':'離線'}</span></div>
+          <div class="friend-rank" style="color:${color}">${rank.name}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${canInvite ? `<button class="btn btn-primary btn-sm" onclick="inviteFriend('${k}')">邀請組隊</button>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="removeFriend('${k}')">移除</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('friendsList').innerHTML = html || '<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px">尚無好友</div>';
+};
+
+window.addFriend = async () => {
+  const name = document.getElementById('friendInput').value.trim();
+  if (!name) return;
+  if (name === G.uid) return notify('不能加自己','err');
+  if ((G.player.friends||{})[name]) return notify('已是好友','err');
+  const snap = await get(ref(db, `players/${name}`));
+  if (!snap.exists()) return notify('找不到玩家','err');
+  await set(ref(db, `friendRequests/${name}/${G.uid}`), true);
+  notify('好友邀請已送出','ok');
+  document.getElementById('friendInput').value = '';
+};
+
+window.acceptFriend = async (from) => {
+  const myFriends = { ...(G.player.friends||{}), [from]: true };
+  await update(ref(db, `players/${G.uid}`), { friends: myFriends });
+  G.player.friends = myFriends;
+  const theirSnap = await get(ref(db, `players/${from}`));
+  if (theirSnap.exists()) {
+    const theirFriends = { ...(theirSnap.val().friends||{}), [G.uid]: true };
+    await update(ref(db, `players/${from}`), { friends: theirFriends });
+  }
+  await remove(ref(db, `friendRequests/${G.uid}/${from}`));
+  renderFriends();
+  notify(`已與 ${from} 成為好友！`, 'ok');
+};
+
+window.declineFriend = async (from) => {
+  await remove(ref(db, `friendRequests/${G.uid}/${from}`));
+};
+
+window.removeFriend = async (name) => {
+  const myFriends = { ...(G.player.friends||{}) };
+  delete myFriends[name];
+  await update(ref(db, `players/${G.uid}`), { friends: myFriends });
+  G.player.friends = myFriends;
+  renderFriends();
+};
+
+// ===== LEADERBOARD =====
+window.loadLeaderboard = async () => {
+  document.getElementById('lbList').innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">載入中...</div>';
+  try {
+    const snap = await get(ref(db, 'players'));
+    const data = snap.val() || {};
+    const arr = Object.values(data).sort((a,b) => (b.exp||0) - (a.exp||0));
+    if (arr.length === 0) {
+      document.getElementById('lbList').innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">尚無玩家資料</div>';
+      return;
+    }
+    let html = '';
+    arr.slice(0,20).forEach((p,i) => {
+      const rank = getRank(p.exp||0);
+      const color = getRankColor(rank.key);
+      const badgeClass = i===0?'top1':i===1?'top2':i===2?'top3':'';
+      const isMe = p.name === G.uid;
+      html += `<div class="lb-item" style="${isMe?'border-color:var(--gold);background:var(--surface2)':''}">
+        <div class="lb-rank ${badgeClass}">${i+1}</div>
+        <div class="lb-name">${p.name}${isMe?' <span style="color:var(--gold);font-size:11px">（我）</span>':''}</div>
+        <div class="lb-info"><span style="color:${color};font-weight:700">${rank.name}</span><br><span style="font-family:monospace">${fmtBig(p.exp||0)}</span> EXP<br>💰 ${(p.gold||0).toLocaleString()}</div>
+      </div>`;
+    });
+    document.getElementById('lbList').innerHTML = html;
+  } catch(e) {
+    document.getElementById('lbList').innerHTML = `<div style="text-align:center;color:var(--red);padding:20px">載入失敗：${e.message}</div>`;
+  }
+};
+
+// ===== GLOBAL CHAT =====
+function setupGlobalChat() {
+  const chatRef = ref(db, 'globalChat');
+  const recentQ = query(chatRef, orderByChild('ts'), limitToLast(80));
+  G.listeners.globalChat = onChildAdded(recentQ, snap => {
+    const msg = snap.val();
+    appendChatMsg('globalChatMessages', msg.name, msg.text, msg.rankKey, msg.name === G.uid);
+  });
+}
+
+function appendChatMsg(containerId, name, text, rankKey, isOwn) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const color = getRankColor(rankKey || '鐵');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${isOwn ? 'own' : 'other'}`;
+  div.innerHTML = `<div class="chat-msg-user"><span style="color:${color}">${name}</span></div><div class="chat-msg-text">${text.replace(/</g,'&lt;')}</div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+window.sendGlobalChat = async () => {
+  const input = document.getElementById('globalChatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  const rank = getRank(G.player.exp||0);
+  await push(ref(db,'globalChat'), { name: G.uid, text, rankKey: rank.key, ts: Date.now() });
+};
+
+// ===== TEAM CHAT (unified for lobby + game) =====
+function setupTeamChatListener() {
+  if (!G.teamId) return;
+  if (G.listeners.teamChat) { try { off(ref(db, `rooms/${G.teamId}/chat`)); } catch(e){} }
+  const chatRef = query(ref(db, `rooms/${G.teamId}/chat`), orderByChild('ts'), limitToLast(80));
+  G.listeners.teamChat = onChildAdded(chatRef, snap => {
+    const msg = snap.val();
+    if (!msg) return;
+    const color = getRankColor(msg.rankKey || '鐵');
+    const isOwn = msg.name === G.uid;
+    const html = `<div class="chat-msg ${isOwn?'own':'other'}" style="font-size:12px;padding:4px 8px">
+      <div class="chat-msg-user" style="font-size:10px"><span style="color:${color}">${msg.name}</span></div>
+      <div>${msg.text.replace(/</g,'&lt;')}</div>
+    </div>`;
+    // Append to whichever chat panel is visible
+    ['lobbyChatMsgs','gameChatMsgs'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.innerHTML += html; el.scrollTop = el.scrollHeight; }
+    });
+  });
+}
+
+window.sendTeamChat = async (source) => {
+  if (!G.teamId) return;
+  const inputId = source === 'game' ? 'gameChatInput' : 'lobbyChatInput';
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  const rank = getRank(G.player.exp||0);
+  await push(ref(db, `rooms/${G.teamId}/chat`), { name: G.uid, text, rankKey: rank.key, ts: Date.now() });
+};
+
+window.toggleGameChat = () => {
+  const panel = document.getElementById('gameChatPanel');
+  const icon  = document.getElementById('gameChatToggleIcon');
+  panel.classList.toggle('collapsed');
+  icon.textContent = panel.classList.contains('collapsed') ? '▼' : '▲';
+};
+
+function showLobbyChat() {
+  document.getElementById('lobbyChatMsgs').innerHTML = '';
+  document.getElementById('lobbyChatWrap').classList.remove('hidden');
+  setupTeamChatListener();
+}
+
+function hideLobbyChat() {
+  document.getElementById('lobbyChatWrap').classList.add('hidden');
+}
+
+function showGameChat() {
+  document.getElementById('gameChatMsgs').innerHTML = '';
+  document.getElementById('gameChatPanel').classList.remove('hidden');
+  document.getElementById('gameChatPanel').classList.remove('collapsed');
+  document.getElementById('gameChatToggleIcon').textContent = '▲';
+  // Listener already set up from lobby, just ensure it's running
+  if (!G.listeners.teamChat) setupTeamChatListener();
+}
+
+function hideGameChat() {
+  document.getElementById('gameChatPanel').classList.add('hidden');
+}
+
+// ===== PLAY / MATCHMAKING =====
+window.showCreateTeam = () => {
+  document.getElementById('createTeamCode').value = '';
+  document.getElementById('createTeamMsg').textContent = '';
+  openModal('createTeamModal');
+};
+window.showJoinTeam = () => {
+  document.getElementById('joinTeamCode').value = '';
+  document.getElementById('joinTeamMsg').textContent = '';
+  openModal('joinTeamModal');
+};
+
+window.doCreateTeam = async () => {
+  const code = document.getElementById('createTeamCode').value.trim().toUpperCase();
+  if (!code || code.length < 4 || code.length > 8) {
+    document.getElementById('createTeamMsg').textContent = '代碼需4-8字元';
+    return;
+  }
+  const snap = await get(ref(db, `rooms/${code}`));
+  if (snap.exists()) {
+    document.getElementById('createTeamMsg').textContent = '此代碼已被使用';
+    return;
+  }
+  closeModal('createTeamModal');
+  G.teamId = code;
+  await setupRoom(code, true);
+};
+
+window.doJoinTeam = async () => {
+  const code = document.getElementById('joinTeamCode').value.trim().toUpperCase();
+  if (!code) { document.getElementById('joinTeamMsg').textContent = '請輸入代碼'; return; }
+  const snap = await get(ref(db, `rooms/${code}`));
+  if (!snap.exists()) { document.getElementById('joinTeamMsg').textContent = '找不到此小隊'; return; }
+  const room = snap.val();
+  if (room.status === 'starting' || room.status === 'ingame') {
+    document.getElementById('joinTeamMsg').textContent = '此小隊已開始遊戲，無法加入';
+    return;
+  }
+  const memberCount = Object.values(room.members || {}).filter(m => !m.isBot).length;
+  if (memberCount >= 3) {
+    document.getElementById('joinTeamMsg').textContent = '小隊已滿員';
+    return;
+  }
+  closeModal('joinTeamModal');
+  G.teamId = code;
+  await joinRoom(code);
+};
+
+async function setupRoom(code, isLeader) {
+  const rank = getRank(G.player.exp||0);
+  const room = {
+    status: 'waiting',
+    createdAt: Date.now(),
+    members: { [G.uid]: { name: G.uid, rankKey: rank.key, rankName: rank.name, isBot: false, ready: false } },
+    leader: G.uid
+  };
+  await set(ref(db, `rooms/${code}`), room);
+  listenToRoom(code);
+  showRoomWaiting(code);
+}
+
+async function joinRoom(code) {
+  const rank = getRank(G.player.exp||0);
+  await update(ref(db, `rooms/${code}/members/${G.uid}`), { name: G.uid, rankKey: rank.key, rankName: rank.name, isBot: false, ready: false });
+  listenToRoom(code);
+  showRoomWaiting(code);
+}
+
+function showRoomWaiting(code) {
+  document.getElementById('matchScreen').classList.remove('hidden');
+  document.getElementById('matchTitle').textContent = '小隊等待室';
+  document.getElementById('matchSub').textContent = `小隊代碼：${code}`;
+  document.getElementById('matchTimer').textContent = '';
+  document.getElementById('matchSpinner').classList.add('hidden');
+  document.getElementById('matchStatus').textContent = '等待隊員加入...';
+  document.getElementById('matchBtns').innerHTML = `
+    <button class="btn btn-primary" onclick="readyUp()" id="readyBtn">準備</button>
+    <button class="btn btn-danger" onclick="leaveRoom()">離開小隊</button>`;
+  renderMatchTeam();
+  showLobbyChat();
+}
+
+function listenToRoom(code) {
+  if (G.listeners.room) off(ref(db, `rooms/${code}`));
+  G.listeners.room = onValue(ref(db, `rooms/${code}`), snap => {
+    if (!snap.exists()) { leaveRoom(); return; }
+    const room = snap.val();
+    const members = room.members || {};
+    renderMatchTeam(members);
+    if (room.status === 'starting') {
+      // All ready, start game
+      startGameFromRoom(room, code);
+    }
+    if (room.status === 'disbanded') { leaveRoom(); }
+  });
+}
+
+window.readyUp = async () => {
+  const snap = await get(ref(db, `rooms/${G.teamId}/members`));
+  if (!snap.exists()) return;
+  const members = snap.val();
+  const memVals = Object.values(members).filter(m => !m.isBot);
+  if (memVals.length < 2) {
+    notify('至少需要2位玩家才能開始', 'err');
+    return;
+  }
+  // Mark self ready
+  await update(ref(db, `rooms/${G.teamId}/members/${G.uid}`), { ready: true });
+  document.getElementById('readyBtn').disabled = true;
+  document.getElementById('readyBtn').textContent = '已準備';
+  // Check if all ready
+  setTimeout(async () => {
+    const snap2 = await get(ref(db, `rooms/${G.teamId}`));
+    if (!snap2.exists()) return;
+    const room = snap2.val();
+    const mems = room.members || {};
+    const memValsAll = Object.values(mems);
+    const realMembers = memValsAll.filter(m => !m.isBot);
+    const allReady = realMembers.every(m => m.ready);
+    if (allReady && realMembers.length >= 2) {
+      const updated = { ...mems };
+      // Find highest rank among real players to base bot level on
+      const highestExp = realMembers.reduce((maxExp, m) => {
+        const rIdx = RANKS.findIndex(r => r.key === m.rankKey);
+        const exp = rIdx >= 0 ? RANKS[rIdx].exp : 0;
+        return exp > maxExp ? exp : maxExp;
+      }, 0);
+      // Fill up to 3 with bots
+      const currentCount = memValsAll.length;
+      for (let i = currentCount; i < 3; i++) {
+        const botOffset = [0, 1, -1][Math.floor(Math.random() * 3)];
+        const bs = botStats(botOffset, highestExp);
+        updated[`Bot_${i}`] = { name:`人機${i}`, rankKey:bs.rankKey, rankName:bs.rankName, isBot:true, ready:true };
+      }
+      await update(ref(db, `rooms/${G.teamId}`), { status: 'starting', members: updated });
+    }
+  }, 500);
+};
+
+window.leaveRoom = async () => {
+  hideLobbyChat();
+  if (G.listeners.teamChat) { try { off(ref(db, `rooms/${G.teamId}/chat`)); } catch(e){} G.listeners.teamChat = null; }
+  if (G.teamId) {
+    if (G.listeners.room) { off(ref(db, `rooms/${G.teamId}`)); G.listeners.room = null; }
+    try {
+      await remove(ref(db, `rooms/${G.teamId}/members/${G.uid}`));
+      const snap = await get(ref(db, `rooms/${G.teamId}/members`));
+      if (!snap.exists() || Object.keys(snap.val()).length === 0) {
+        await remove(ref(db, `rooms/${G.teamId}`));
+      }
+    } catch(e){}
+    G.teamId = null;
+  }
+  document.getElementById('matchScreen').classList.add('hidden');
+};
+
+function renderMatchTeam(members) {
+  if (!members) {
+    get(ref(db, `rooms/${G.teamId}/members`)).then(s => renderMatchTeam(s.val()||{}));
+    return;
+  }
+  const memVals = Object.values(members);
+  let html = '';
+  for (let i = 0; i < 3; i++) {
+    const m = memVals[i];
+    if (m) {
+      const color = getRankColor(m.rankKey || '鐵');
+      html += `<div class="team-slot filled ${m.isBot?'bot':''}">
+        <div style="font-size:16px">${m.isBot?'🤖':'👤'}</div>
+        <div style="font-size:12px;font-weight:700">${m.name}</div>
+        <div style="font-size:10px;color:${color}">${m.rankName||''}</div>
+        <div style="font-size:10px;color:${m.ready?'var(--green)':'var(--text3)'}">${m.ready?'準備':'等待'}</div>
+      </div>`;
+    } else {
+      html += `<div class="team-slot"><div style="font-size:20px">？</div><div>等待中</div></div>`;
+    }
+  }
+  document.getElementById('matchTeamDisplay').innerHTML = html;
+}
+
+// ===== MATCHMAKING =====
+window.startMatchmaking = async () => {
+  document.getElementById('matchScreen').classList.remove('hidden');
+  document.getElementById('matchTitle').textContent = '隨機匹配';
+  document.getElementById('matchSub').textContent = '搜尋隊友中...';
+  document.getElementById('matchSpinner').classList.remove('hidden');
+  document.getElementById('matchTeamDisplay').innerHTML = '';
+  document.getElementById('matchBtns').innerHTML = `<button class="btn btn-danger" onclick="cancelMatchmaking()">取消匹配</button>`;
+  let seconds = 0;
+  document.getElementById('matchTimer').textContent = '0s';
+  G.matchCountdown = setInterval(() => {
+    seconds++;
+    document.getElementById('matchTimer').textContent = seconds + 's';
+  }, 1000);
+  // Add to matchmaking pool
+  const rank = getRank(G.player.exp||0);
+  const myPoolRef = ref(db, `matchPool/${G.uid}`);
+  await set(myPoolRef, { name: G.uid, rankKey: rank.key, rankName: rank.name, ts: Date.now() });
+  G.matchRef = myPoolRef;
+  // Poll for match
+  G.matchTimer = setTimeout(async () => { await formBotMatch(); }, 10000);
+  // Listen for a room assignment
+  const assignRef = ref(db, `matchAssign/${G.uid}`);
+  G.listeners.matchAssign = onValue(assignRef, async snap => {
+    if (snap.exists()) {
+      clearInterval(G.matchCountdown);
+      clearTimeout(G.matchTimer);
+      const { roomId } = snap.val();
+      await remove(assignRef);
+      G.teamId = roomId;
+      listenToRoom(roomId);
+      // Wait for room to start
+      document.getElementById('matchStatus').textContent = '已找到隊伍！等待準備...';
+      document.getElementById('matchSpinner').classList.add('hidden');
+    }
+  });
+  // Try to form a team from pool
+  setTimeout(() => tryFormMatch(), 2000);
+};
+
+async function tryFormMatch() {
+  if (!G.matchRef) return;
+  const poolSnap = await get(ref(db, 'matchPool'));
+  const pool = poolSnap.val() || {};
+  const players = Object.keys(pool).filter(k => pool[k]);
+  if (players.length >= 3) {
+    // Form a team (leader is first player in pool)
+    const team = players.slice(0, 3);
+    const roomId = 'MATCH_' + Date.now().toString(36).toUpperCase();
+    const members = {};
+    for (const p of team) {
+      members[p] = { name: p, rankKey: pool[p].rankKey, rankName: pool[p].rankName, isBot: false, ready: true };
+    }
+    await set(ref(db, `rooms/${roomId}`), { status: 'starting', members, createdAt: Date.now() });
+    for (const p of team) {
+      await set(ref(db, `matchAssign/${p}`), { roomId });
+      await remove(ref(db, `matchPool/${p}`));
+    }
+  } else if (G.matchRef) {
+    setTimeout(() => tryFormMatch(), 3000);
+  }
+}
+
+async function formBotMatch() {
+  if (!G.matchRef) return;
+  clearInterval(G.matchCountdown);
+  document.getElementById('matchStatus').textContent = '補充人機隊友...';
+  const roomId = 'MATCH_' + Date.now().toString(36).toUpperCase();
+  const rank = getRank(G.player.exp||0);
+  const members = {
+    [G.uid]: { name: G.uid, rankKey: rank.key, rankName: rank.name, isBot: false, ready: true }
+  };
+  for (let i = 1; i < 3; i++) {
+    const o = [0,1,-1][Math.floor(Math.random()*3)];
+    const bs = botStats(o, G.player.exp||0);
+    members[`Bot_${i}`] = { name:`人機${i}`, rankKey:bs.rankKey, rankName:bs.rankName, isBot:true, ready:true };
+  }
+  await set(ref(db, `rooms/${roomId}`), { status: 'starting', members, createdAt: Date.now() });
+  await remove(G.matchRef);
+  G.matchRef = null;
+  G.teamId = roomId;
+  listenToRoom(roomId);
+}
+
+window.cancelMatchmaking = async () => {
+  clearInterval(G.matchCountdown);
+  clearTimeout(G.matchTimer);
+  if (G.matchRef) { await remove(G.matchRef); G.matchRef = null; }
+  if (G.listeners.matchAssign) { off(ref(db, `matchAssign/${G.uid}`)); G.listeners.matchAssign = null; }
+  document.getElementById('matchScreen').classList.add('hidden');
+};
+
+// ===== GAME START FROM ROOM =====
+async function startGameFromRoom(room, code) {
+  if (G.listeners.room) { off(ref(db, `rooms/${code}`)); G.listeners.room = null; }
+  hideLobbyChat();
+  document.getElementById('matchScreen').classList.add('hidden');
+  const members = room.members || {};
+
+  // Mark room as ingame immediately so no one else can join
+  // Then after a short delay, delete the room entry entirely so the code is freed
+  if (room.status !== 'ingame') {
+    update(ref(db, `rooms/${code}`), { status: 'ingame' }).then(() => {
+      // Delete the room's members node (keeps battle/alloc subnodes for game sync)
+      // The room entry itself can stay for battle sync, but members are cleared
+      remove(ref(db, `rooms/${code}/members`));
+    });
+  }
+
+  // Use onChildRemoved on a separate presence node instead of members
+  // (members node is deleted above, so we use a different approach for disconnect detection)
+  // Write each real player's presence and watch for removal
+  const presenceRef = ref(db, `rooms/${code}/presence`);
+  const myPresenceRef = ref(db, `rooms/${code}/presence/${G.uid}`);
+  set(myPresenceRef, { name: G.uid, ts: Date.now() });
+
+  G.listeners.gameMembers = onChildRemoved(presenceRef, snap => {
+    if (!G.gameState) return;
+    const removedName = snap.key;
+    if (removedName === G.uid) return;
+    handleTeammateDisconnect(removedName);
+  });
+
+  // Listen for next stage signal from host
+  G.listeners.nextStage = onValue(ref(db, `rooms/${code}/nextStage`), snap => {
+    if (!snap.exists() || !G.gameState) return;
+    const stageNum = snap.val();
+    if (stageNum && stageNum !== G.gameState.stage && !G.gameState.isHost) {
+      document.getElementById('resultOverlay').classList.add('hidden');
+      if (G.listeners.battle) { off(ref(db, `rooms/${code}/battle`)); G.listeners.battle = null; }
+      if (G.listeners.battleLog) { off(ref(db, `rooms/${code}/battleLog`)); G.listeners.battleLog = null; }
+      startStage(stageNum);
+    }
+  });
+
+  // Listen for host transfers
+  G.listeners.hostChange = onValue(ref(db, `rooms/${code}/host`), snap => {
+    if (!snap.exists() || !G.gameState) return;
+    const newHost = snap.val();
+    if (newHost === G.uid && !G.gameState.isHost) {
+      // I've been promoted to host
+      G.gameState.isHost = true;
+      G.gameState.hostName = G.uid;
+      if (G.listeners.battle)    { off(ref(db, `rooms/${code}/battle`));    G.listeners.battle = null; }
+      if (G.listeners.battleLog) { off(ref(db, `rooms/${code}/battleLog`)); G.listeners.battleLog = null; }
+      listenForActions();
+      if (G.gameState.battleActive) {
+        writeBattleState();
+        hostProcessNextTurn();
+      }
+    }
+  });
+
+  await initGame(members, code);
+  showGameChat();
+}
+
+// ===== GAME ENGINE =====
+async function initGame(members, roomId) {
+  const rank = getRank(G.player.exp||0);
+  const memVals = Object.values(members);
+
+  // Determine host: first real player in the members object is the host
+  const realMems = memVals.filter(m => !m.isBot);
+  const hostName = realMems.length > 0 ? realMems[0].name : G.uid;
+  const iAmHost = (hostName === G.uid);
+
+  // Pre-load skills for all real players from Firebase
+  const playerSkillsMap = {};
+  await Promise.all(realMems.map(async m => {
+    try {
+      const snap = await get(ref(db, `players/${m.name}/skills`));
+      playerSkillsMap[m.name] = snap.exists() ? (snap.val() || {}) : {};
+    } catch(e) { playerSkillsMap[m.name] = {}; }
+  }));
+
+  // Build player team: self + teammates
+  const team = [];
+  for (const m of memVals) {
+    if (m.isBot) {
+      // Bot rank is already decided in readyUp (stored as m.rankKey/m.rankName)
+      // Use that rank's base stats directly, then add random 10 pts on top
+      const botRankIdx = RANKS.findIndex(r => r.key === m.rankKey);
+      const botRank = botRankIdx >= 0 ? RANKS[botRankIdx] : RANKS[0];
+      const extra = rollMonsterStats(10);
+      team.push({ name: m.name, isBot:true, isMe:false,
+        hp: botRank.hp + extra.hp, maxHp: botRank.hp + extra.hp,
+        atk: botRank.atk + extra.atk,
+        def: botRank.def + extra.def,
+        rankKey: botRank.key, rankName: botRank.name,
+        skills:{}, allocDone:true });
+    } else if (m.name === G.uid) {
+      team.push({ name: G.uid, isBot:false, isMe:true,
+        hp: rank.hp, maxHp: rank.hp, atk: rank.atk, def: rank.def,
+        rankKey: rank.key, rankName: rank.name,
+        skills: G.player.skills||{}, allocDone:false,
+        allocExtra:{hp:0,atk:0,def:0} });
+    } else {
+      // Other real player — use their rank and pre-loaded skills
+      const theirRankIdx = RANKS.findIndex(r => r.key === m.rankKey);
+      const theirRank = theirRankIdx >= 0 ? RANKS[theirRankIdx] : RANKS[0];
+      team.push({ name: m.name, isBot:false, isMe:false,
+        hp: theirRank.hp, maxHp: theirRank.hp, atk: theirRank.atk, def: theirRank.def,
+        rankKey: m.rankKey, rankName: m.rankName,
+        skills: playerSkillsMap[m.name] || {}, allocDone:false });
+    }
+  }
+  G.gameState = {
+    stage: 1,
+    team,
+    enemies: [],
+    currentTurn: 0,
+    turnOrder: [],
+    battleActive: false,
+    roomId,
+    pendingAlloc: true,
+    log: [],
+    selectedEnemy: -1,
+    isHost: iAmHost,
+    hostName,
+    roundNum: 1
+  };
+  // Write current host to Firebase so others can detect host transfers
+  if (iAmHost) {
+    set(ref(db, `rooms/${roomId}/host`), hostName);
+  }
+  document.getElementById('gameScreen').classList.remove('hidden');
+  startStage(1);
+}
+
+function startStage(stage) {
+  const gs = G.gameState;
+  gs.stage = stage;
+  gs.selectedEnemy = -1;
+  const cfg = STAGE_CONFIG[stage-1];
+  // Restore team HP to max
+  for (const m of gs.team) {
+    m.hp = m.maxHp;
+    // For stage 2+, bots need their allocDone reset so they receive the new pts
+    if (stage > 1 && m.isBot) m.allocDone = false;
+    if (stage > 1 && !m.isMe && !m.isBot) m.allocDone = false;
+  }
+  // Generate enemies
+  gs.enemies = [];
+  for (let i = 0; i < 3; i++) {
+    const s = rollMonsterStats(cfg.monsterPts);
+    gs.enemies.push({ name:`怪物${i+1}`, isMonster:true, hp:s.hp, maxHp:s.hp, atk:s.atk, def:s.def, skills:{} });
+  }
+  gs.battleActive = false;
+  gs.pendingAlloc = true;
+  gs.log = [];
+  gs._phoenixCount = {};
+  document.getElementById('gameStageText').textContent = `第 ${stage} 關`;
+  document.getElementById('gameStageSub').textContent = '分配屬性點數';
+  document.getElementById('allocPanel').classList.remove('hidden');
+  document.getElementById('battleSection').classList.add('hidden');
+  document.getElementById('resultOverlay').classList.add('hidden');
+  // Alloc panel setup
+  const pts = cfg.playerPts;
+  const myMem = gs.team.find(m => m.isMe);
+  if (myMem) {
+    myMem.allocExtra = {hp:0,atk:0,def:0};
+    myMem.allocDone = false;
+  }
+  resetAllocUI(pts, myMem);
+}
+
+function resetAllocUI(pts, myMem) {
+  document.getElementById('allocPointsLeft').textContent = pts;
+  document.getElementById('alloc-hp').textContent = '0';
+  document.getElementById('alloc-atk').textContent = '0';
+  document.getElementById('alloc-def').textContent = '0';
+  if (myMem) {
+    document.getElementById('allocTitle').innerHTML =
+      `分配 <strong style="color:var(--accent)">${pts}</strong> 點屬性（每點：+5血量 / +1攻擊 / +1防禦）<br>
+       <span style="font-size:11px;color:var(--text2)">目前：❤ ${myMem.maxHp}血　⚔ ${myMem.atk}攻　🛡 ${myMem.def}防</span>`;
+  }
+  updateAllocTotals(myMem);
+}
+
+function updateAllocTotals(myMem) {
+  if (!myMem) return;
+  const addHp = parseInt(document.getElementById('alloc-hp').textContent) || 0;
+  const addAtk = parseInt(document.getElementById('alloc-atk').textContent) || 0;
+  const addDef = parseInt(document.getElementById('alloc-def').textContent) || 0;
+  document.getElementById('alloc-hp-total').textContent = `→ ${myMem.maxHp + addHp * 5}`;
+  document.getElementById('alloc-atk-total').textContent = `→ ${myMem.atk + addAtk}`;
+  document.getElementById('alloc-def-total').textContent = `→ ${myMem.def + addDef}`;
+}
+
+window.allocAttr = (attr, delta) => {
+  const gs = G.gameState;
+  const myMem = gs.team.find(m => m.isMe);
+  if (!myMem) return;
+  const ptsLeft = parseInt(document.getElementById('allocPointsLeft').textContent);
+  const current = parseInt(document.getElementById(`alloc-${attr}`).textContent);
+  if (delta > 0 && ptsLeft <= 0) return;
+  if (delta < 0 && current <= 0) return;
+  document.getElementById(`alloc-${attr}`).textContent = current + delta;
+  document.getElementById('allocPointsLeft').textContent = ptsLeft - delta;
+  updateAllocTotals(myMem);
+};
+
+window.confirmAlloc = async () => {
+  const gs = G.gameState;
+  const myMem = gs.team.find(m => m.isMe);
+  if (!myMem) { startBattle(); return; }
+  const addHp  = parseInt(document.getElementById('alloc-hp').textContent)  || 0;
+  const addAtk = parseInt(document.getElementById('alloc-atk').textContent) || 0;
+  const addDef = parseInt(document.getElementById('alloc-def').textContent) || 0;
+
+  // Apply to local state
+  myMem.maxHp = myMem.maxHp + addHp * 5;
+  myMem.atk   = myMem.atk + addAtk;
+  myMem.def   = myMem.def + addDef;
+  myMem.hp    = myMem.maxHp;
+  myMem.allocDone = true;
+
+  // Check if there are any real teammates (not just solo/bots)
+  const realTeammates = gs.team.filter(m => !m.isMe && !m.isBot);
+
+  if (realTeammates.length === 0) {
+    // Solo or all-bot team — start immediately
+    document.getElementById('allocPanel').classList.add('hidden');
+    document.getElementById('gameStageSub').textContent = '戰鬥中';
+    startBattle();
+    return;
+  }
+
+  // Multiplayer: write alloc to Firebase and wait for others
+  document.getElementById('confirmAllocBtn').disabled = true;
+  document.getElementById('confirmAllocBtn').textContent = '等待隊友...';
+
+  const allocData = {
+    hp: myMem.maxHp, atk: myMem.atk, def: myMem.def,
+    maxHp: myMem.maxHp, done: true, ts: Date.now()
+  };
+  await set(ref(db, `rooms/${gs.roomId}/alloc/${G.uid}/stage${gs.stage}`), allocData);
+
+  // Show waiting overlay inside alloc panel
+  document.getElementById('allocWaitMsg').classList.remove('hidden');
+
+  // Listen for all players' alloc to be done
+  listenForAllocReady(gs);
+};
+
+function listenForAllocReady(gs) {
+  const allocRef = ref(db, `rooms/${gs.roomId}/alloc`);
+  if (G.listeners.alloc) { off(allocRef); }
+  G.listeners.alloc = onValue(allocRef, snap => {
+    const allocData = snap.val() || {};
+    // Check each real member has submitted
+    const realMembers = gs.team.filter(m => !m.isBot);
+    const allDone = realMembers.every(m => {
+      const d = (allocData[m.name] || {})[`stage${gs.stage}`];
+      return d && d.done;
+    });
+    if (!allDone) return;
+
+    // All done — apply each teammate's alloc to local team state
+    off(allocRef);
+    G.listeners.alloc = null;
+    for (const m of gs.team) {
+      if (m.isMe) continue;
+      if (m.isBot) continue;
+      const d = (allocData[m.name] || {})[`stage${gs.stage}`];
+      if (d) {
+        m.hp = d.hp; m.maxHp = d.maxHp;
+        m.atk = d.atk; m.def = d.def;
+      }
+      m.allocDone = true;
+    }
+    document.getElementById('allocWaitMsg').classList.add('hidden');
+    document.getElementById('confirmAllocBtn').disabled = false;
+    document.getElementById('confirmAllocBtn').textContent = '確認屬性，開始戰鬥';
+    document.getElementById('allocPanel').classList.add('hidden');
+    document.getElementById('gameStageSub').textContent = '戰鬥中';
+    startBattle();
+  });
+}
+
+// Called when a teammate disconnects mid-game — hand control to AI, preserve all accumulated stats
+function handleTeammateDisconnect(name) {
+  const gs = G.gameState;
+  if (!gs) return;
+  const idx = gs.team.findIndex(m => m.name === name);
+  if (idx < 0) return;
+  const m = gs.team[idx];
+  if (m.isBot || m.isMe) return;
+
+  // Replace with bot, preserving all stats
+  gs.team[idx] = {
+    ...m,
+    name: `人機(${name})`,
+    isBot: true,
+    isMe: false,
+    allocDone: true,
+    skills: {}
+  };
+
+  addLog(`<span class="red">${name} 已離線，由同等級人機接替（屬性保留）</span>`);
+  renderBattle();
+
+  // If disconnected player was the host, transfer host to me
+  const wasHost = (name === gs.hostName);
+  if (wasHost) {
+    gs.isHost = true;
+    gs.hostName = G.uid;
+    // Write new host to Firebase so others know
+    set(ref(db, `rooms/${gs.roomId}/host`), G.uid);
+    // Stop listening as non-host, start driving as host
+    if (G.listeners.battle)    { off(ref(db, `rooms/${gs.roomId}/battle`));    G.listeners.battle = null; }
+    if (G.listeners.battleLog) { off(ref(db, `rooms/${gs.roomId}/battleLog`)); G.listeners.battleLog = null; }
+    listenForActions();
+    addLog(`<span class="cyan">已接管戰鬥控制權</span>`);
+    // Resume battle from current state
+    if (gs.battleActive) {
+      if (gs.waitingForPlayer) {
+        // Was waiting for the disconnected host (who was also a player) — skip their turn
+        const t = gs.turnOrder[gs.currentTurn];
+        if (t && t.type === 'team' && gs.team[t.i] && gs.team[t.i].name === gs.team[idx].name) {
+          gs.waitingForPlayer = false;
+          gs.currentTurn++;
+        }
+      }
+      writeBattleState();
+      hostProcessNextTurn();
+    } else if (gs.pendingAlloc) {
+      // Still in alloc phase — check if we can start
+      const myMem = gs.team.find(t => t.isMe);
+      if (myMem && myMem.allocDone) {
+        // Write fake alloc for disconnected player to unblock
+        const fakeAllocRef = ref(db, `rooms/${gs.roomId}/alloc/${name}/stage${gs.stage}`);
+        set(fakeAllocRef, { hp: m.hp, maxHp: m.maxHp, atk: m.atk, def: m.def, done: true, ts: Date.now() });
+      }
+    }
+    return;
+  }
+
+  // Non-host disconnect — only host handles game logic
+  if (!isHost()) return;
+
+  // If waiting for their alloc during attribute phase
+  if (gs.pendingAlloc) {
+    const myMem = gs.team.find(t => t.isMe);
+    if (myMem && myMem.allocDone) {
+      const fakeAllocRef = ref(db, `rooms/${gs.roomId}/alloc/${name}/stage${gs.stage}`);
+      set(fakeAllocRef, { hp: m.hp, maxHp: m.maxHp, atk: m.atk, def: m.def, done: true, ts: Date.now() });
+    }
+  }
+
+  // If it was their turn in battle
+  if (gs.battleActive && gs.waitingForPlayer) {
+    const t = gs.turnOrder[gs.currentTurn];
+    if (t && t.type === 'team' && gs.team[t.i] && gs.team[t.i].name === gs.team[idx].name) {
+      gs.waitingForPlayer = false;
+      gs.currentTurn++;
+      writeBattleState();
+      hostProcessNextTurn();
+    }
+  }
+}
+function startBattle() {
+  const gs = G.gameState;
+  gs.battleActive = true;
+  gs.pendingAlloc = false;
+  gs.waitingForPlayer = false;
+  gs.roundNum = 1;
+  gs.log = [];
+  document.getElementById('battleSection').classList.remove('hidden');
+  buildTurnOrder();
+  renderBattle();
+  if (isHost()) {
+    listenForActions();
+    writeBattleState();
+    hostProcessNextTurn();
+  } else {
+    listenBattleState();
+  }
+}
+
+function buildTurnOrder() {
+  const gs = G.gameState;
+  const teamTurns = gs.team
+    .map((m, i) => ({ type: 'team', i }))
+    .filter(t => gs.team[t.i].hp > 0);
+  const enemyTurns = gs.enemies
+    .map((e, i) => ({ type: 'enemy', i }))
+    .filter(t => gs.enemies[t.i].hp > 0);
+  const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+  gs.turnOrder = [...shuffle(teamTurns), ...shuffle(enemyTurns)];
+  gs.currentTurn = 0;
+  gs.waitingForPlayer = false;
+}
+
+// Legacy wrappers (kept for solo/bot flow)
+function processNextTurn() { if (isHost()) hostProcessNextTurn(); }
+function checkBattleEnd() { return isHost() ? hostCheckBattleEnd() : false; }
+
+window.clickEnemy = (i) => {
+  const gs = G.gameState;
+  if (!gs || !gs.battleActive) return;
+  if (!gs.waitingForPlayer) return;
+  const t = gs.turnOrder[gs.currentTurn];
+  if (!t || t.type !== 'team') return;
+  const actor = gs.team[t.i];
+  if (!actor || actor.hp <= 0) return;
+  const enemy = gs.enemies[i];
+  if (!enemy || enemy.hp <= 0) return;
+
+  gs.waitingForPlayer = false;
+  gs.selectedEnemy = i;
+  document.getElementById('battleHint').textContent = '';
+
+  if (isHost()) {
+    // Host acts directly
+    hostPerformAttack(actor, enemy, true);
+    gs.currentTurn++;
+    renderBattle();
+    writeBattleState();
+    if (!hostCheckBattleEnd()) setTimeout(() => hostProcessNextTurn(), 500);
+  } else {
+    // Non-host: send action request to Firebase for host to process
+    sendActionRequest(i);
+    document.getElementById('battleHint').textContent = '攻擊中...';
+    gs.waitingForPlayer = false;
+  }
+};
+
+function getEffectiveAtk(fighter) {
+  // 蠻力: each 15 HP gives +(lv) bonus ATK
+  const bruteLv = (fighter.skills||{})['蠻力'] || 0;
+  let atk = fighter.atk;
+  if (bruteLv > 0) {
+    atk += Math.floor(fighter.hp / 15) * bruteLv;
+  }
+  return atk;
+}
+
+function calcSingleHit(attacker, defender) {
+  const effAtk = getEffectiveAtk(attacker);
+  let dmg = effAtk - defender.def;
+  if (dmg < 1) dmg = 1;
+  let isCrit = false;
+
+  // 暴徒: HP < 20% → damage bonus
+  const brutishLv = (attacker.skills||{})['暴徒'] || 0;
+  if (brutishLv > 0 && attacker.maxHp > 0) {
+    const hpPct = attacker.hp / attacker.maxHp;
+    if (hpPct < 0.2) {
+      const bonus = 50 + (brutishLv - 1) * 15;
+      dmg = Math.round(dmg * (1 + bonus / 100));
+    }
+  }
+
+  // 爆擊
+  const critLv = (attacker.skills||{})['爆擊'] || 0;
+  if (critLv > 0) {
+    const critChance = 10 + (critLv - 1) * 5;
+    const critMult  = 120 + (critLv - 1) * 5;
+    if (Math.random() * 100 < critChance) {
+      dmg = Math.round(dmg * critMult / 100);
+      if (dmg < 1) dmg = 1;
+      isCrit = true;
+    }
+  }
+
+  if (dmg < 1) dmg = 1;
+  return { dmg, isCrit };
+}
+
+function calcDamage(attacker, defender) {
+  const hit1 = calcSingleHit(attacker, defender);
+  let dmg = hit1.dmg;
+  let isCrit = hit1.isCrit;
+  let isDouble = false;
+  let dmg2 = 0;
+  let isCrit2 = false;
+
+  // 二連斬
+  const doubleLv = (attacker.skills||{})['二連斬'] || 0;
+  if (doubleLv > 0) {
+    const doubleChance = 5 + (doubleLv - 1) * 5;
+    if (Math.random() * 100 < doubleChance) {
+      isDouble = true;
+      const hit2 = calcSingleHit(attacker, defender);
+      dmg2 = hit2.dmg;
+      isCrit2 = hit2.isCrit;
+    }
+  }
+
+  return { dmg, isCrit, isDouble, dmg2, isCrit2 };
+}
+
+// Returns true if 絕對防禦 blocked the hit
+function checkAbsoluteDefense(defender) {
+  const lv = (defender.skills||{})['絕對防禦'] || 0;
+  if (lv <= 0) return false;
+  const chance = 5 + (lv - 1) * 5;
+  return Math.random() * 100 < chance;
+}
+
+// Returns true if 不死鳥 saved the defender (sets hp to 1)
+function checkPhoenix(defender, gs) {
+  const lv = (defender.skills||{})['不死鳥'] || 0;
+  if (lv <= 0) return false;
+  const maxTriggers = lv; // lv1=1, lv2=2, lv3=3
+  const key = `phoenix_${gs.stage}_${defender.name}`;
+  gs._phoenixCount = gs._phoenixCount || {};
+  const used = gs._phoenixCount[key] || 0;
+  if (used >= maxTriggers) return false;
+  gs._phoenixCount[key] = used + 1;
+  defender.hp = 1;
+  return true;
+}
+
+// 致命一擊 instant kill check
+function checkInstantKill(attacker, defender) {
+  const lv = (attacker.skills||{})['致命一擊'] || 0;
+  if (lv <= 0) return false;
+  const chance = 1 + (lv - 1) * 1;
+  return Math.random() * 100 < chance;
+}
+
+// 暴徒 check for red slash color
+function isBrutishActive(attacker) {
+  const lv = (attacker.skills||{})['暴徒'] || 0;
+  if (lv <= 0) return false;
+  return attacker.maxHp > 0 && (attacker.hp / attacker.maxHp) < 0.2;
+}
+
+// ===== BATTLE SYNC ARCHITECTURE =====
+// The "host" (room leader / first real player) drives all battle logic.
+// Every action is written to Firebase: rooms/{roomId}/battle/
+// All clients (including host) listen to Firebase and render from it.
+// Non-host players' clicks are written as "action requests" to Firebase,
+// which the host processes and executes.
+
+function isHost() {
+  return G.gameState && G.gameState.isHost;
+}
+
+function writeBattleState() {
+  if (!isHost()) return;
+  const gs = G.gameState;
+
+  // Find who we're waiting for — must be the ACTUAL current actor, not "isMe"
+  let waitingFor = null;
+  if (gs.waitingForPlayer && gs.turnOrder && gs.currentTurn < gs.turnOrder.length) {
+    const t = gs.turnOrder[gs.currentTurn];
+    if (t && t.type === 'team') {
+      const actor = gs.team[t.i];
+      if (actor && !actor.isBot) waitingFor = actor.name;
+    }
+  }
+
+  const state = {
+    stage: gs.stage,
+    team: gs.team.map(m => ({
+      name: m.name, isBot: m.isBot||false,
+      hp: m.hp, maxHp: m.maxHp, atk: m.atk, def: m.def,
+      rankKey: m.rankKey||'鐵', rankName: m.rankName||'黑鐵',
+      skills: m.skills||{}, allocDone: m.allocDone||false, dead: m.hp<=0
+    })),
+    enemies: gs.enemies.map(e => ({
+      name: e.name, hp: e.hp, maxHp: e.maxHp,
+      atk: e.atk, def: e.def, skills: e.skills||{}, dead: e.hp<=0
+    })),
+    currentTurnIdx: gs.currentTurn,
+    turnOrder: gs.turnOrder,
+    battleActive: gs.battleActive,
+    pendingAlloc: gs.pendingAlloc,
+    waitingFor,
+    roundNum: gs.roundNum || 1,
+    ts: Date.now()
+  };
+  set(ref(db, `rooms/${gs.roomId}/battle`), state);
+}
+
+function writeBattleEvent(event) {
+  if (!isHost()) return;
+  const gs = G.gameState;
+  push(ref(db, `rooms/${gs.roomId}/battleLog`), { ...event, ts: Date.now() });
+}
+
+function addLog(msg) {
+  const el = document.getElementById('battleLog');
+  if (el) {
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML = msg;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+  }
+  // Host broadcasts log to Firebase so non-host clients see it too
+  if (isHost() && G.gameState) {
+    push(ref(db, `rooms/${G.gameState.roomId}/battleLog`), {
+      type: 'log', msg, ts: Date.now()
+    });
+  }
+}
+
+
+function listenBattleState() {
+  const gs = G.gameState;
+  if (isHost()) return; // host drives, doesn't listen to itself
+  const battleRef = ref(db, `rooms/${gs.roomId}/battle`);
+  G.listeners.battle = onValue(battleRef, snap => {
+    if (!snap.exists() || !G.gameState) return;
+    const state = snap.val();
+    applyBattleState(state);
+  });
+  // Also listen to battle log for effects
+  const logRef = query(ref(db, `rooms/${gs.roomId}/battleLog`), orderByChild('ts'), limitToLast(1));
+  G.listeners.battleLog = onChildAdded(logRef, snap => {
+    if (!G.gameState) return;
+    const ev = snap.val();
+    if (!ev) return;
+    // Trigger visual effects from log events
+    if (ev.type === 'log') {
+      const el = document.getElementById('battleLog');
+      if (el) {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerHTML = ev.msg;
+        el.appendChild(div);
+        el.scrollTop = el.scrollHeight;
+      }
+    }
+    if (ev.type === 'attack') {
+      setTimeout(() => {
+        const defFxEl = getFxEl(ev.defIsEnemy, ev.defIdx);
+        const defCard = getFxCard(ev.defIsEnemy, ev.defIdx);
+        if (ev.blocked) {
+          fxBlock(defFxEl, defCard);
+        } else if (ev.isInstantKill) {
+          fxInstantKill(defFxEl, defCard, ev.defIsEnemy);
+        } else if (ev.isSlash) {
+          fxSlash(defFxEl, ev.isCrit, false, ev.slashColor);
+          setTimeout(() => {
+            fxHitFlash(defFxEl);
+            fxParticles(defCard, ev.dmg, ev.isCrit, ev.slashColor);
+            fxDamageNumber(defFxEl, ev.dmg, ev.isCrit, false, false, false);
+            if (ev.dying && ev.defIsEnemy) setTimeout(() => fxExplosion(defFxEl, defCard), 200);
+            if (ev.dying && !ev.defIsEnemy) setTimeout(() => { fxGhost(defFxEl); setTimeout(() => fxTombstone(defFxEl), 800); }, 150);
+          }, 120);
+        } else {
+          fxHitFlash(defFxEl);
+          fxParticles(defCard, ev.dmg, ev.isCrit);
+          fxDamageNumber(defFxEl, ev.dmg, ev.isCrit, false, false, false);
+          if (ev.dying && ev.defIsEnemy) setTimeout(() => fxExplosion(defFxEl, defCard), 200);
+          if (ev.dying && !ev.defIsEnemy) setTimeout(() => { fxGhost(defFxEl); setTimeout(() => fxTombstone(defFxEl), 800); }, 150);
+        }
+      }, 80);
+    }
+  });
+}
+
+function applyBattleState(state) {
+  const gs = G.gameState;
+  if (!gs) return;
+
+  // Sync full team stats from host
+  if (state.team) {
+    state.team.forEach((ft, i) => {
+      if (!gs.team[i]) return;
+      gs.team[i].hp     = ft.hp;
+      gs.team[i].maxHp  = ft.maxHp;
+      gs.team[i].atk    = ft.atk;
+      gs.team[i].def    = ft.def;
+      gs.team[i].dead   = ft.dead;
+    });
+  }
+  // Sync full enemy stats from host
+  if (state.enemies) {
+    // If enemies list changed size (new stage), rebuild
+    if (state.enemies.length !== gs.enemies.length) {
+      gs.enemies = state.enemies.map(e => ({ ...e }));
+    } else {
+      state.enemies.forEach((fe, i) => {
+        if (!gs.enemies[i]) return;
+        gs.enemies[i].hp    = fe.hp;
+        gs.enemies[i].maxHp = fe.maxHp;
+        gs.enemies[i].atk   = fe.atk;
+        gs.enemies[i].def   = fe.def;
+        gs.enemies[i].dead  = fe.dead;
+      });
+    }
+  }
+
+  gs.battleActive   = state.battleActive;
+  gs.turnOrder      = state.turnOrder  || gs.turnOrder;
+  gs.currentTurn    = state.currentTurnIdx ?? 0;
+  gs.roundNum       = state.roundNum   || 1;
+
+  // Make sure battle section is visible for non-host
+  if (state.battleActive) {
+    document.getElementById('allocPanel').classList.add('hidden');
+    document.getElementById('battleSection').classList.remove('hidden');
+  }
+
+  renderBattle();
+
+  // Update turn UI
+  const t = gs.turnOrder ? gs.turnOrder[gs.currentTurn] : null;
+  const actor = t ? (t.type === 'team' ? gs.team[t.i] : gs.enemies[t.i]) : null;
+
+  if (state.waitingFor === G.uid) {
+    gs.waitingForPlayer = true;
+    document.getElementById('battleHint').innerHTML = '⚔️ <strong>輪到你！點擊右側任意敵人發起攻擊</strong>';
+    document.getElementById('turnIndicator').innerHTML = `<span class="gold">★ 你的回合 ★</span>`;
+  } else if (state.waitingFor) {
+    gs.waitingForPlayer = false;
+    document.getElementById('battleHint').textContent = '';
+    document.getElementById('turnIndicator').textContent = `等待 ${state.waitingFor} 攻擊...`;
+  } else {
+    gs.waitingForPlayer = false;
+    document.getElementById('battleHint').textContent = '';
+    if (actor) document.getElementById('turnIndicator').textContent = `${actor.name} 的回合`;
+  }
+
+  // Stage result
+  if (state.stageResult === 'win')  setTimeout(() => showStageResult(true),  300);
+  if (state.stageResult === 'lose') setTimeout(() => showStageResult(false), 300);
+}
+
+// Non-host sends attack request via dedicated actions node (not battleLog)
+function sendActionRequest(enemyIdx) {
+  const gs = G.gameState;
+  push(ref(db, `rooms/${gs.roomId}/actions`), {
+    type: 'actionRequest',
+    from: G.uid,
+    enemyIdx,
+    ts: Date.now()
+  });
+}
+
+// Host listens for action requests from non-host players
+function listenForActions() {
+  const gs = G.gameState;
+  if (!isHost()) return;
+  const actionsRef = ref(db, `rooms/${gs.roomId}/actions`);
+  G.listeners.actions = onChildAdded(actionsRef, snap => {
+    if (!G.gameState || !G.gameState.battleActive) return;
+    const ev = snap.val();
+    if (!ev || ev.type !== 'actionRequest') return;
+    // Remove processed action
+    remove(snap.ref);
+    processActionRequest(ev);
+  });
+}
+
+// Host processes a non-host player's attack request
+function processActionRequest(ev) {
+  const gs = G.gameState;
+  if (!gs || !gs.battleActive) return;
+  const t = gs.turnOrder[gs.currentTurn];
+  if (!t || t.type !== 'team') return;
+  const actor = gs.team[t.i];
+  if (!actor || actor.name !== ev.from) return; // not their turn
+  const enemy = gs.enemies[ev.enemyIdx];
+  if (!enemy || enemy.hp <= 0) return;
+  gs.waitingForPlayer = false;
+  hostPerformAttack(actor, enemy, true);
+  gs.currentTurn++;
+  if (!hostCheckBattleEnd()) {
+    writeBattleState();
+    setTimeout(() => hostProcessNextTurn(), 500);
+  }
+}
+
+// ===== HOST BATTLE LOGIC =====
+function hostPerformAttack(attacker, defender, isSlash) {
+  const gs = G.gameState;
+  const { isEnemy: defIsEnemy, idx: defIdx } = getTargetIndex(defender);
+  const { isEnemy: attIsEnemy, idx: attIdx } = getTargetIndex(attacker);
+
+  // 絕對防禦 check
+  if (checkAbsoluteDefense(defender)) {
+    addLog(`🛡 <span class="cyan">${defender.name}</span> 絕對防禦！完全免疫此次攻擊！`);
+    writeBattleEvent({ type:'attack', attIsEnemy, attIdx, defIsEnemy, defIdx,
+      dmg:0, isCrit:false, isSlash:false, dying:false, blocked:true });
+    requestAnimationFrame(() => {
+      const defFxEl = getFxEl(defIsEnemy, defIdx);
+      const defCard = getFxCard(defIsEnemy, defIdx);
+      fxBlock(defFxEl, defCard);
+    });
+    return;
+  }
+
+  // 致命一擊 check
+  if (checkInstantKill(attacker, defender)) {
+    // Check if 不死鳥 saves
+    const savedByPhoenix = defender.hp > 0 && checkPhoenix(defender, gs);
+    if (!savedByPhoenix) {
+      const prevHp = defender.hp;
+      defender.hp = 0;
+      addLog(`☠️ <span class="gold">${attacker.name}</span> 致命一擊！<span class="red">${defender.name}</span> 瞬間喪命！`);
+      writeBattleEvent({ type:'attack', attIsEnemy, attIdx, defIsEnemy, defIdx,
+        dmg: prevHp, isCrit:false, isSlash:true, dying:true, isInstantKill:true });
+      requestAnimationFrame(() => {
+        const defFxEl = getFxEl(defIsEnemy, defIdx);
+        const defCard = getFxCard(defIsEnemy, defIdx);
+        fxInstantKill(defFxEl, defCard, defIsEnemy);
+      });
+      return;
+    } else {
+      addLog(`☠️ <span class="gold">${attacker.name}</span> 致命一擊！但 🔥<span style="color:#ff9900">${defender.name} 不死鳥</span>以1HP存活！`);
+      renderBattle();
+      return;
+    }
+  }
+
+  const { dmg, isCrit, isDouble, dmg2, isCrit2 } = calcDamage(attacker, defender);
+  const brutish = isBrutishActive(attacker);
+  const slashColor = brutish ? 'red' : (isCrit ? 'gold' : 'blue');
+
+  // Apply hit 1
+  const wouldDie = defender.hp - dmg <= 0;
+  let savedByPhoenix = false;
+  if (wouldDie) {
+    savedByPhoenix = checkPhoenix(defender, gs);
+  }
+  if (!savedByPhoenix) {
+    defender.hp = Math.max(0, defender.hp - dmg);
+  }
+  let defDying = defender.hp <= 0;
+
+  let msg = `<span class="accent">${attacker.name}</span> 攻擊 <span class="red">${defender.name}</span>`;
+  if (brutish) msg += ` 🔥<span style="color:#ff6666">暴徒之力！</span>`;
+  if (isCrit) msg += ` 💥<span class="gold">爆擊！</span>`;
+  msg += ` 造成 <span class="red">${dmg}</span> 點傷害`;
+  if (savedByPhoenix) msg += ` 🔥<span style="color:#ff9900">不死鳥！以1HP存活！</span>`;
+  else if (defDying && !isDouble) msg += ` 💀`;
+  addLog(msg);
+
+  writeBattleEvent({ type:'attack', attIsEnemy, attIdx, defIsEnemy, defIdx,
+    dmg, isCrit, isSlash: isSlash || (!attIsEnemy && !attacker.isBot), slashColor,
+    dying: defDying && !isDouble && !savedByPhoenix });
+
+  // Apply hit 2 (二連斬)
+  if (isDouble && defender.hp > 0) {
+    setTimeout(() => {
+      const wouldDie2 = defender.hp - dmg2 <= 0;
+      let saved2 = false;
+      if (wouldDie2) saved2 = checkPhoenix(defender, gs);
+      if (!saved2) defender.hp = Math.max(0, defender.hp - dmg2);
+      const dying2 = defender.hp <= 0;
+      let msg2 = `<span class="accent">${attacker.name}</span> ⚔️⚔️<span style="color:#a0c4ff">二連斬！</span>`;
+      if (isCrit2) msg2 += ` 💥<span class="gold">爆擊！</span>`;
+      msg2 += ` 再造成 <span class="red">${dmg2}</span> 點傷害`;
+      if (saved2) msg2 += ` 🔥<span style="color:#ff9900">不死鳥！以1HP存活！</span>`;
+      else if (dying2) msg2 += ` 💀`;
+      addLog(msg2);
+      writeBattleEvent({ type:'attack', attIsEnemy, attIdx, defIsEnemy, defIdx,
+        dmg: dmg2, isCrit: isCrit2, isSlash: true, slashColor, dying: dying2 && !saved2 });
+      applyThorns(defender, attacker, dmg2, defIsEnemy, defIdx, attIsEnemy, attIdx);
+      renderBattle();
+    }, 350);
+  } else {
+    applyThorns(defender, attacker, dmg, defIsEnemy, defIdx, attIsEnemy, attIdx);
+  }
+
+  // Local effects for host
+  requestAnimationFrame(() => {
+    const defFxEl = getFxEl(defIsEnemy, defIdx);
+    const defCard = getFxCard(defIsEnemy, defIdx);
+    const doSlash = isSlash || (!attIsEnemy && !attacker.isBot);
+    if (doSlash) {
+      fxSlash(defFxEl, isCrit, false, slashColor);
+      setTimeout(() => {
+        fxHitFlash(defFxEl);
+        fxParticles(defCard, dmg, isCrit, slashColor);
+        fxDamageNumber(defFxEl, dmg, isCrit, false, false, false);
+        if (defDying && !isDouble && !savedByPhoenix) {
+          if (defIsEnemy) setTimeout(() => fxExplosion(defFxEl, defCard), 200);
+          else setTimeout(() => { fxGhost(defFxEl); setTimeout(() => fxTombstone(defFxEl), 800); }, 150);
+        }
+      }, 120);
+    } else {
+      fxHitFlash(defFxEl);
+      fxParticles(defCard, dmg, isCrit);
+      fxDamageNumber(defFxEl, dmg, isCrit, false, false, false);
+      if (defDying && !isDouble && !savedByPhoenix) {
+        if (defIsEnemy) setTimeout(() => fxExplosion(defFxEl, defCard), 200);
+        else setTimeout(() => { fxGhost(defFxEl); setTimeout(() => fxTombstone(defFxEl), 800); }, 150);
+      }
+    }
+  });
+}
+
+function applyThorns(defender, attacker, dmg, defIsEnemy, defIdx, attIsEnemy, attIdx) {
+  const thornLv = (defender.skills||{})['反傷'] || 0;
+  if (thornLv > 0 && attacker.hp > 0) {
+    const thornPct = 5 + (thornLv-1)*7;
+    let thornDmg = Math.round(dmg * thornPct/100);
+    if (thornDmg < 1) thornDmg = 1;
+    attacker.hp = Math.max(0, attacker.hp - thornDmg);
+    addLog(`<span class="cyan">${defender.name}</span> 反傷！${attacker.name} 受到 <span class="cyan">${thornDmg}</span> 點傷害`);
+    setTimeout(() => {
+      const attFxEl = getFxEl(attIsEnemy, attIdx);
+      const attCard = getFxCard(attIsEnemy, attIdx);
+      fxHitFlash(attFxEl);
+      fxDamageNumber(attFxEl, thornDmg, false, false, false, true);
+      fxParticles(attCard, thornDmg, false);
+      if (attacker.hp <= 0) {
+        if (attIsEnemy) setTimeout(() => fxExplosion(attFxEl, attCard), 200);
+        else setTimeout(() => { fxGhost(attFxEl); setTimeout(() => fxTombstone(attFxEl), 800); }, 150);
+      }
+    }, 280);
+  }
+}
+
+function hostCheckBattleEnd() {
+  const gs = G.gameState;
+  const teamAlive = gs.team.some(m => m.hp > 0);
+  const enemiesAlive = gs.enemies.some(e => e.hp > 0);
+  if (!enemiesAlive) {
+    set(ref(db, `rooms/${gs.roomId}/battle/stageResult`), 'win');
+    setTimeout(() => showStageResult(true), 600);
+    return true;
+  }
+  if (!teamAlive) {
+    set(ref(db, `rooms/${gs.roomId}/battle/stageResult`), 'lose');
+    setTimeout(() => showStageResult(false), 600);
+    return true;
+  }
+  return false;
+}
+
+function hostProcessNextTurn() {
+  const gs = G.gameState;
+  if (!gs || !gs.battleActive) return;
+
+  // Skip dead
+  while (gs.currentTurn < gs.turnOrder.length) {
+    const t = gs.turnOrder[gs.currentTurn];
+    const actor = t.type === 'team' ? gs.team[t.i] : gs.enemies[t.i];
+    if (actor && actor.hp > 0) break;
+    gs.currentTurn++;
+  }
+
+  // New round
+  if (gs.currentTurn >= gs.turnOrder.length) {
+    if (hostCheckBattleEnd()) return;
+    buildTurnOrder();
+    gs.roundNum = (gs.roundNum||1) + 1;
+    renderBattle();
+    writeBattleState();
+    setTimeout(() => hostProcessNextTurn(), 300);
+    return;
+  }
+
+  const t = gs.turnOrder[gs.currentTurn];
+  const actor = t.type === 'team' ? gs.team[t.i] : gs.enemies[t.i];
+
+  if (!actor || actor.hp <= 0) {
+    gs.currentTurn++;
+    hostProcessNextTurn();
+    return;
+  }
+
+  renderBattle();
+
+  if (t.type === 'team' && !actor.isBot) {
+    // Real player's turn — tell everyone to wait for this player
+    gs.waitingForPlayer = true;
+    writeBattleState(); // broadcasts waitingFor = actor.name (fixed in writeBattleState)
+    if (actor.isMe) {
+      document.getElementById('battleHint').innerHTML = '⚔️ <strong>輪到你！點擊右側任意敵人發起攻擊</strong>';
+      document.getElementById('turnIndicator').innerHTML = `<span class="gold">★ 你的回合 ★</span>`;
+    } else {
+      document.getElementById('battleHint').textContent = '';
+      document.getElementById('turnIndicator').textContent = `等待 ${actor.name} 攻擊...`;
+    }
+  } else {
+    // AI / enemy turn
+    gs.waitingForPlayer = false;
+    const label = t.type === 'team' ? `${actor.name}（隊友）` : `${actor.name}（敵方）`;
+    document.getElementById('battleHint').textContent = '';
+    document.getElementById('turnIndicator').textContent = `${label} 的回合`;
+    writeBattleState();
+    setTimeout(() => {
+      let targets;
+      if (t.type === 'team') targets = gs.enemies.filter(e => e.hp > 0);
+      else targets = gs.team.filter(m => m.hp > 0);
+      if (!targets.length) { gs.currentTurn++; hostProcessNextTurn(); return; }
+      const target = targets[Math.floor(Math.random() * targets.length)];
+      hostPerformAttack(actor, target, false);
+      gs.currentTurn++;
+      renderBattle();
+      writeBattleState();
+      if (!hostCheckBattleEnd()) setTimeout(() => hostProcessNextTurn(), 700);
+    }, 800);
+  }
+}
+
+function performAttack(attacker, defender) {
+  // Unified entry point — always goes through host logic now
+  hostPerformAttack(attacker, defender, !attacker.isBot && !attacker.isMonster);
+}
+
+
+
+// ===== BATTLE EFFECTS ENGINE =====
+function getFxEl(isEnemy, idx) {
+  // After renderBattle, cards are rebuilt — get the overlay div
+  return document.getElementById(`fx-${isEnemy?'enemy':'team'}-${idx}`);
+}
+function getFxCard(isEnemy, idx) {
+  return document.getElementById(`fc-${isEnemy?'enemy':'team'}-${idx}`);
+}
+
+function fxSlash(fxEl, isCrit, _unused, slashColor) {
+  if (!fxEl) return;
+  const count = isCrit ? 4 : 2;
+  let colors;
+  if (slashColor === 'red') {
+    colors = ['#ff3333','#ff8800','#fff','#cc0000'];
+  } else if (isCrit) {
+    colors = ['#ffe066','#ff9900','#fff','#ffcc00'];
+  } else {
+    colors = ['#4f8ef7','#a0c4ff','#fff'];
+  }
+  const baseAngle = -28;
+  for (let k = 0; k < count; k++) {
+    const line = document.createElement('div');
+    line.className = 'slash-line';
+    const angle = baseAngle + (k - Math.floor(count/2)) * 14;
+    const topPct = 20 + k * 18;
+    line.style.cssText = `
+      --slash-angle:${angle}deg;
+      top:${topPct}%;left:-20%;
+      background:linear-gradient(90deg,transparent,${colors[k%colors.length]},transparent);
+      box-shadow:0 0 8px 2px ${colors[k%colors.length]}99;
+      animation-delay:${k*40}ms;
+    `;
+    fxEl.appendChild(line);
+    setTimeout(() => line.remove(), 500 + k*40);
+  }
+  const glow = document.createElement('div');
+  glow.className = 'slash-glow';
+  glow.style.setProperty('--glow-color', slashColor === 'red' ? '#ff3333' : isCrit ? '#ffaa00' : '#4f8ef7');
+  fxEl.appendChild(glow);
+  setTimeout(() => glow.remove(), 450);
+}
+
+function fxBlock(fxEl, card) {
+  if (!fxEl) return;
+  const shield = document.createElement('div');
+  shield.style.cssText = `position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px;animation:popIn .3s ease forwards;pointer-events:none;z-index:28`;
+  shield.textContent = '🛡';
+  fxEl.appendChild(shield);
+  setTimeout(() => shield.remove(), 700);
+  if (card) {
+    card.style.boxShadow = '0 0 20px 6px #3ecfcfaa';
+    setTimeout(() => { card.style.boxShadow = ''; }, 500);
+  }
+}
+
+function fxInstantKill(fxEl, card, isEnemy) {
+  if (!fxEl) return;
+  // Epic multi-layered instant kill effect
+  for (let i = 0; i < 6; i++) {
+    const line = document.createElement('div');
+    line.className = 'slash-line';
+    const angle = -45 + i * 15;
+    line.style.cssText = `
+      --slash-angle:${angle}deg;
+      top:${10 + i*13}%;left:-20%;width:160%;
+      background:linear-gradient(90deg,transparent,#fff,#ffe066,#fff,transparent);
+      box-shadow:0 0 16px 4px #ffe06699;
+      animation-delay:${i*30}ms;height:4px;
+    `;
+    fxEl.appendChild(line);
+    setTimeout(() => line.remove(), 700);
+  }
+  const skull = document.createElement('div');
+  skull.style.cssText = `position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:52px;animation:explode .5s ease forwards;pointer-events:none;z-index:30`;
+  skull.textContent = '💀';
+  fxEl.appendChild(skull);
+  setTimeout(() => skull.remove(), 900);
+  if (card) {
+    card.style.animation = 'none';
+    let t = 0;
+    const shake = setInterval(() => {
+      card.style.transform = `translateX(${(Math.random()-0.5)*12}px) translateY(${(Math.random()-0.5)*6}px)`;
+      if (++t > 6) { clearInterval(shake); card.style.transform = ''; }
+    }, 50);
+  }
+  if (isEnemy) setTimeout(() => fxExplosion(fxEl, card), 300);
+  else setTimeout(() => { fxGhost(fxEl); setTimeout(() => fxTombstone(fxEl), 800); }, 300);
+}
+
+function fxHitFlash(fxEl) {
+  if (!fxEl) return;
+  const flash = document.createElement('div');
+  flash.className = 'hit-flash';
+  fxEl.appendChild(flash);
+  setTimeout(() => flash.remove(), 320);
+}
+
+function fxDamageNumber(fxEl, dmg, isCrit, _unused1, _unused2, isThorn) {
+  if (!fxEl) return;
+  const num = document.createElement('div');
+  num.className = 'fx-dmg';
+  let color = isThorn ? '#3ecfcf' : isCrit ? '#ffe066' : '#ff6666';
+  let prefix = isThorn ? '↩' : isCrit ? '💥' : '';
+  num.style.cssText = `color:${color};font-size:${isCrit?'26px':'20px'};top:35%`;
+  num.textContent = `${prefix}-${dmg}`;
+  fxEl.appendChild(num);
+  setTimeout(() => num.remove(), 950);
+}
+
+function fxParticles(card, dmg, isCrit, slashColor) {
+  if (!card) return;
+  const count = Math.min(6 + Math.floor(dmg / 5), 14);
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    const angle = (360 / count) * i + Math.random() * 30;
+    const dist = 28 + Math.random() * 36;
+    const size = isCrit ? (4 + Math.random()*5) : (2 + Math.random()*4);
+    let colors;
+    if (slashColor === 'red') colors = ['#ff3333','#ff8800','#fff','#ff0000'];
+    else if (isCrit) colors = ['#ffe066','#ff9900','#fff','#ff4444'];
+    else colors = ['#ff6666','#ffaa66','#fff','#cc3333'];
+    const color = colors[Math.floor(Math.random()*colors.length)];
+    const dur = 400 + Math.random() * 300;
+    const rad = angle * Math.PI / 180;
+    const tx = Math.cos(rad) * dist;
+    const ty = Math.sin(rad) * dist;
+    p.style.cssText = `
+      position:absolute;
+      left:calc(50% - ${size/2}px);top:calc(40% - ${size/2}px);
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${color};pointer-events:none;z-index:28;
+      transition:transform ${dur}ms ease-out,opacity ${dur}ms ease-out;
+      box-shadow:0 0 4px ${color};
+    `;
+    card.appendChild(p);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        p.style.transform = `translate(${tx}px,${ty}px) scale(0)`;
+        p.style.opacity = '0';
+      });
+    });
+    setTimeout(() => p.remove(), dur + 50);
+  }
+}
+
+function fxExplosion(fxEl, card) {
+  if (!card) return;
+  const colors = ['#ff4400','#ff8800','#ffcc00','#fff','#ff2200','#ffaa00'];
+  const count = 22;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    const angle = (360 / count) * i + Math.random() * 10;
+    const dist = 40 + Math.random() * 55;
+    const size = 4 + Math.random() * 7;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const dur = 500 + Math.random() * 350;
+    const rad = angle * Math.PI / 180;
+    const tx = Math.cos(rad) * dist;
+    const ty = Math.sin(rad) * dist;
+    p.style.cssText = `
+      position:absolute;left:calc(50% - ${size/2}px);top:calc(45% - ${size/2}px);
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${color};pointer-events:none;z-index:30;
+      transition:transform ${dur}ms ease-out,opacity ${dur}ms ease-out;
+      box-shadow:0 0 6px 2px ${color}aa;
+    `;
+    card.appendChild(p);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      p.style.transform = `translate(${tx}px,${ty}px) scale(0.1)`;
+      p.style.opacity = '0';
+    }));
+    setTimeout(() => p.remove(), dur + 60);
+  }
+  // Shockwave ring
+  const ring = document.createElement('div');
+  ring.style.cssText = `
+    position:absolute;left:10%;top:10%;width:80%;height:80%;
+    border-radius:50%;border:3px solid #ff8800;pointer-events:none;z-index:29;
+    transition:transform .5s ease-out,opacity .5s ease-out;
+    box-shadow:0 0 12px #ff880088;
+  `;
+  card.appendChild(ring);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    ring.style.transform = 'scale(3.5)';
+    ring.style.opacity = '0';
+  }));
+  setTimeout(() => ring.remove(), 560);
+  // Card shake
+  let shakeT = 0;
+  const shake = setInterval(() => {
+    card.style.transform = `translateX(${(Math.random()-0.5)*10}px)`;
+    if (++shakeT > 5) { clearInterval(shake); card.style.transform = ''; }
+  }, 55);
+}
+
+function fxGhost(fxEl) {
+  if (!fxEl) return;
+  const ghost = document.createElement('div');
+  ghost.className = 'fx-ghost';
+  ghost.textContent = '👻';
+  fxEl.appendChild(ghost);
+  setTimeout(() => ghost.remove(), 1700);
+}
+
+function fxTombstone(fxEl) {
+  if (!fxEl) return;
+  const tomb = document.createElement('div');
+  tomb.className = 'fx-tombstone';
+  tomb.textContent = '🪦';
+  fxEl.appendChild(tomb);
+  // Tombstone stays visible (card is dead/greyed)
+  setTimeout(() => tomb.remove(), 2500);
+}
+
+function getTargetIndex(target) {
+  const gs = G.gameState;
+  let idx = gs.enemies.indexOf(target);
+  if (idx >= 0) return { isEnemy: true, idx };
+  idx = gs.team.indexOf(target);
+  return { isEnemy: false, idx };
+}
+
+// (showAttackEffects removed — effects now handled directly in hostPerformAttack and listenBattleState)
+
+function renderBattle() {
+  const gs = G.gameState;
+  if (!gs) return;
+  const pPanel = document.getElementById('playerTeamPanel');
+  const ePanel = document.getElementById('enemyTeamPanel');
+  // Preserve label
+  pPanel.innerHTML = '<div class="team-label accent">✦ 我方</div>';
+  ePanel.innerHTML = '<div class="team-label red">✦ 敵方</div>';
+  const curT = gs.turnOrder[gs.currentTurn];
+  gs.team.forEach((m, i) => {
+    const isActive = curT && curT.type === 'team' && curT.i === i;
+    const hpPct = m.maxHp > 0 ? (m.hp/m.maxHp*100) : 0;
+    const hpClass = hpPct > 60 ? 'high' : hpPct > 30 ? 'mid' : 'low';
+    const rankColor = getRankColor(m.rankKey || '鐵');
+    pPanel.innerHTML += `<div class="fighter-card ${m.hp>0?'alive':'dead'} ${isActive?'active-turn':''}" id="fc-team-${i}" style="position:relative">
+      <div class="fx-overlay" id="fx-team-${i}"></div>
+      <div class="fighter-name">
+        <span>${m.isMe?'★ ':''}<span style="color:${rankColor}">${m.name}</span></span>
+        <span style="font-size:10px;color:var(--text3)">${m.rankName||''}</span>
+      </div>
+      <div class="hp-bar"><div class="hp-fill ${hpClass}" style="width:${hpPct}%"></div></div>
+      <div class="fighter-stats">
+        <span class="fs-hp">HP ${m.hp}/${m.maxHp}</span>
+        <span class="fs-atk">ATK ${m.atk}</span>
+        <span class="fs-def">DEF ${m.def}</span>
+      </div>
+    </div>`;
+  });
+  gs.enemies.forEach((e, i) => {
+    const isActive = curT && curT.type === 'enemy' && curT.i === i;
+    const isSelected = gs.selectedEnemy === i;
+    const hpPct = e.maxHp > 0 ? (e.hp/e.maxHp*100) : 0;
+    const hpClass = hpPct > 60 ? 'high' : hpPct > 30 ? 'mid' : 'low';
+    ePanel.innerHTML += `<div class="fighter-card enemy ${e.hp>0?'alive':'dead'} ${isActive?'active-turn':''} ${isSelected?'target-selected':''}" id="fc-enemy-${i}" style="position:relative" onclick="clickEnemy(${i})">
+      <div class="fx-overlay" id="fx-enemy-${i}"></div>
+      <div class="fighter-name">
+        <span>👾 ${e.name}</span>
+        ${e.hp>0?'<span style="font-size:10px;color:var(--text3)">點擊攻擊</span>':'<span style="font-size:10px;color:var(--red)">已擊敗</span>'}
+      </div>
+      <div class="hp-bar"><div class="hp-fill ${hpClass}" style="width:${hpPct}%"></div></div>
+      <div class="fighter-stats">
+        <span class="fs-hp">HP ${e.hp}/${e.maxHp}</span>
+        <span class="fs-atk">ATK ${e.atk}</span>
+        <span class="fs-def">DEF ${e.def}</span>
+      </div>
+    </div>`;
+  });
+}
+
+function highlightActiveActor() { renderBattle(); }
+
+function showStageResult(win) {
+  const gs = G.gameState;
+  gs.battleActive = false;
+  const cfg = STAGE_CONFIG[gs.stage-1];
+  const overlay = document.getElementById('resultOverlay');
+  overlay.classList.remove('hidden');
+  document.getElementById('resultTitle').textContent = win ? '勝利！' : '落敗...';
+  document.getElementById('resultTitle').className = `result-title ${win ? 'result-win' : 'result-lose'}`;
+  if (win) {
+    document.getElementById('resultRewards').innerHTML = `🎉 獲得 <span class="gold">${cfg.exp}</span> 經驗 + <span class="gold">${cfg.gold}</span> 金幣`;
+    document.getElementById('nextStageBtn').classList.toggle('hidden', gs.stage >= STAGE_CONFIG.length);
+    awardRewards(cfg.exp, cfg.gold);
+  } else {
+    document.getElementById('resultRewards').innerHTML = '隊伍全員陣亡，遊戲結束';
+    document.getElementById('nextStageBtn').classList.add('hidden');
+  }
+}
+
+async function awardRewards(exp, gold) {
+  const newExp = (G.player.exp||0) + exp;
+  const newGold = (G.player.gold||0) + gold;
+  await update(ref(db, `players/${G.uid}`), { exp: newExp, gold: newGold });
+  G.player.exp = newExp;
+  G.player.gold = newGold;
+  updateUI();
+}
+
+window.nextStage = () => {
+  const gs = G.gameState;
+  document.getElementById('resultOverlay').classList.add('hidden');
+  if (gs.stage < STAGE_CONFIG.length) {
+    if (isHost()) {
+      // Host clears battle state and signals next stage
+      remove(ref(db, `rooms/${gs.roomId}/battle`));
+      remove(ref(db, `rooms/${gs.roomId}/battleLog`));
+      remove(ref(db, `rooms/${gs.roomId}/alloc`));
+      set(ref(db, `rooms/${gs.roomId}/nextStage`), gs.stage + 1);
+    }
+    startStage(gs.stage + 1);
+  }
+};
+
+window.exitGame = async () => {
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('resultOverlay').classList.add('hidden');
+  hideGameChat();
+  const tid = G.teamId;
+  // Stop all listeners FIRST
+  if (tid) {
+    try { if (G.listeners.alloc)       off(ref(db, `rooms/${tid}/alloc`));      } catch(e){} G.listeners.alloc = null;
+    try { if (G.listeners.gameMembers) off(ref(db, `rooms/${tid}/presence`));   } catch(e){} G.listeners.gameMembers = null;
+    try { if (G.listeners.battle)      off(ref(db, `rooms/${tid}/battle`));     } catch(e){} G.listeners.battle = null;
+    try { if (G.listeners.battleLog)   off(ref(db, `rooms/${tid}/battleLog`));  } catch(e){} G.listeners.battleLog = null;
+    try { if (G.listeners.nextStage)   off(ref(db, `rooms/${tid}/nextStage`));  } catch(e){} G.listeners.nextStage = null;
+    try { if (G.listeners.actions)     off(ref(db, `rooms/${tid}/actions`));    } catch(e){} G.listeners.actions = null;
+    try { if (G.listeners.hostChange)  off(ref(db, `rooms/${tid}/host`));       } catch(e){} G.listeners.hostChange = null;
+    try { if (G.listeners.teamChat)    off(ref(db, `rooms/${tid}/chat`));       } catch(e){} G.listeners.teamChat = null;
+  }
+  if (tid) {
+    try {
+      await remove(ref(db, `rooms/${tid}/presence/${G.uid}`));
+      const presSnap = await get(ref(db, `rooms/${tid}/presence`));
+      if (!presSnap.exists() || Object.keys(presSnap.val()||{}).length === 0) {
+        await remove(ref(db, `rooms/${tid}`));
+      }
+    } catch(e){}
+    G.teamId = null;
+  }
+  G.gameState = null;
+  const snap = await get(ref(db, `players/${G.uid}`));
+  if (snap.exists()) { G.player = snap.val(); updateUI(); }
+  switchTab('home');
+};
+
+// ===== CLEANUP =====
+function cleanupListeners() {
+  if (G.matchTimer) clearTimeout(G.matchTimer);
+  if (G.matchCountdown) clearInterval(G.matchCountdown);
+  if (G.matchRef) remove(G.matchRef);
+  if (G.uid) {
+    try { if (G.listeners.friendReq)   off(ref(db, `friendRequests/${G.uid}`)); } catch(e){}
+    try { if (G.listeners.teamInvites) off(ref(db, `teamInvites/${G.uid}`));    } catch(e){}
+    try { if (G.listeners.globalChat)  off(ref(db, 'globalChat'));              } catch(e){}
+  }
+  G.listeners = {};
+}
+
+window.addEventListener('beforeunload', () => {
+  if (G.uid) remove(ref(db, `online/${G.uid}`));
+  if (G.matchRef) remove(G.matchRef);
+  if (G.teamId && G.uid) {
+    if (G.gameState) {
+      remove(ref(db, `rooms/${G.teamId}/presence/${G.uid}`));
+    } else {
+      remove(ref(db, `rooms/${G.teamId}/members/${G.uid}`));
+    }
+  }
+});
+
+// ===== EXPOSE ALL ONCLICK HANDLERS TO GLOBAL SCOPE =====
+// Required because <script type="module"> is scoped — onclick= can't find module-local functions
+window.closeModal        = (id) => document.getElementById(id).classList.add('hidden');
+window.openModal         = (id) => document.getElementById(id).classList.remove('hidden');
+window.switchAuthTab     = switchAuthTab;
+window.switchTab         = switchTab;
+window.allocAttr         = allocAttr;
+window.confirmAlloc      = confirmAlloc;
+window.clickEnemy        = clickEnemy;
+window.addFriend         = addFriend;
+window.acceptFriend      = acceptFriend;
+window.declineFriend     = declineFriend;
+window.removeFriend      = removeFriend;
+window.renderFriends     = renderFriends;
+window.sendGlobalChat    = sendGlobalChat;
+window.showCreateTeam    = showCreateTeam;
+window.showJoinTeam      = showJoinTeam;
+window.doCreateTeam      = doCreateTeam;
+window.doJoinTeam        = doJoinTeam;
+window.readyUp           = readyUp;
+window.leaveRoom         = leaveRoom;
+window.startMatchmaking  = startMatchmaking;
+window.cancelMatchmaking = cancelMatchmaking;
+window.inviteFriend       = inviteFriend;
+window.doLogin           = doLogin;
+window.doRegister        = doRegister;
+window.doLogout          = doLogout;
 </script>
 </body>
 </html>
