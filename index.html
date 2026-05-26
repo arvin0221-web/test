@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Boss Demo</title>
+    <style>
+        /* 讓遊戲畫面居中，背景變黑色 */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+        canvas {
+            background-color: #1a1a1a;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 遊戲畫布 -->
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Boss 的初始設定
+        const boss = {
+            x: canvas.width / 2,     // 畫面中間
+            y: canvas.height / 2 - 50, // 稍微偏上
+            baseRadius: 60,          // 基礎大小
+            currentRadius: 60,       // 動態縮放後的大小
+            angle: 0,                // 用於計算呼吸與旋轉的角度
+            eyeGlow: 0               // 眼睛發光強度
+        };
+
+        // 遊戲主迴圈（每秒執行約 60 次）
+        function gameLoop() {
+            // 1. 清除上一格畫面，並畫上深色背景
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 2. 更新 Boss 的動態數值（利用三角函數 Math.sin 做出平滑的來回效果）
+            boss.angle += 0.05; 
+            
+            // 呼吸效果：讓身體半徑在 58 ~ 62 之間緩慢變動
+            boss.currentRadius = boss.baseRadius + Math.sin(boss.angle) * 2;
+            
+            // 眼睛發光效果：讓光暈隨機閃爍，更有生命感
+            boss.eyeGlow = 10 + Math.random() * 10 + Math.sin(boss.angle) * 5;
+
+            // 3. 開始繪製 Boss
+            
+            // 【特效一：旋轉收縮的藍色防護罩】
+            let shieldRadius = boss.currentRadius + 30 + Math.cos(boss.angle * 1.5) * 5;
+            let shieldGlow = ctx.createRadialGradient(boss.x, boss.y, boss.currentRadius, boss.x, boss.y, shieldRadius);
+            shieldGlow.addColorStop(0, 'rgba(0, 191, 255, 0.4)'); // 靠近身體是藍色
+            shieldGlow.addColorStop(0.7, 'rgba(0, 255, 255, 0.2)'); // 中間亮藍
+            shieldGlow.addColorStop(1, 'rgba(0, 191, 255, 0)');   // 外圈透明
+            
+            ctx.fillStyle = shieldGlow;
+            ctx.beginPath();
+            ctx.arc(boss.x, boss.y, shieldRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 【特效二：Boss 本體（帶漸層的暗紅色球體）】
+            let bodyGlow = ctx.createRadialGradient(boss.x - 15, boss.y - 15, 5, boss.x, boss.y, boss.currentRadius);
+            bodyGlow.addColorStop(0, '#ff4d4d'); // 受光面亮紅
+            bodyGlow.addColorStop(1, '#800000'); // 背光面暗紅
+            
+            ctx.fillStyle = bodyGlow;
+            ctx.beginPath();
+            ctx.arc(boss.x, boss.y, boss.currentRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 【特效三：發光的憤怒眼睛】
+            ctx.fillStyle = '#ffeb3b';
+            ctx.shadowBlur = boss.eyeGlow;     // 套用動態發光強度
+            ctx.shadowColor = '#ffeb3b';       // 光暈顏色
+            
+            // 左眼（微幅隨呼吸上下微調）
+            ctx.fillRect(boss.x - 25, boss.y - 15 + Math.sin(boss.angle) * 0.5, 16, 8); 
+            // 右眼
+            ctx.fillRect(boss.x + 9, boss.y - 15 + Math.sin(boss.angle) * 0.5, 16, 8); 
+            
+            // 重設發光濾鏡（避免影響到其他繪圖）
+            ctx.shadowBlur = 0;
+
+            // 【文字提示】
+            ctx.fillStyle = '#555';
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Boss 處於待機狀態...', canvas.width / 2, canvas.height - 50);
+
+            // 4. 持續循環執行
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 啟動遊戲
+        gameLoop();
+    </script>
+</body>
+</html>
+
