@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Boss Demo</title>
+    <title>GitHub Humanoid Boss Demo</title>
     <style>
-        /* 讓遊戲畫面居中，背景變黑色 */
         body {
             margin: 0;
             padding: 0;
@@ -16,98 +15,239 @@
             height: 100vh;
             overflow: hidden;
             font-family: sans-serif;
+            user-select: none;
         }
         canvas {
-            background-color: #1a1a1a;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            border: 2px solid #333;
+            background-color: #121214;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+            border: 2px solid #2a2a30;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <!-- 遊戲畫布 -->
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Boss 的初始設定
+        // Boss 的屬性設定
         const boss = {
-            x: canvas.width / 2,     // 畫面中間
-            y: canvas.height / 2 - 50, // 稍微偏上
-            baseRadius: 60,          // 基礎大小
-            currentRadius: 60,       // 動態縮放後的大小
-            angle: 0,                // 用於計算呼吸與旋轉的角度
-            eyeGlow: 0               // 眼睛發光強度
+            x: canvas.width / 2,
+            y: canvas.height / 2 - 80,
+            angle: 0,              // 呼吸起伏用的角度
+            
+            // 狀態系統：'idle' (待機), 'slash' (揮刀), 'laser' (噴吐激光)
+            state: 'idle',         
+            stateTimer: 0,         // 動作計時器
+
+            // 武器屬性
+            swordAngle: -0.5,      // 大刀的角度（弧度）
+            
+            // 激光屬性
+            laserWidth: 0,
+            laserTargetX: 0,
+            laserTargetY: 0
         };
 
-        // 遊戲主迴圈（每秒執行約 60 次）
-        function gameLoop() {
-            // 1. 清除上一格畫面，並畫上深色背景
-            ctx.fillStyle = '#1a1a1a';
+        // 監聽滑鼠點擊（或手機觸控）
+        canvas.addEventListener('mousedown', (e) => {
+            // 如果 Boss 正在忙，就不能切換狀態
+            if (boss.state !== 'idle') return;
+
+            // 獲取點擊位置
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // 隨機觸發：50% 機率揮刀，50% 機率噴吐激光
+            if (Math.random() > 0.5) {
+                triggerSlash();
+            } else {
+                triggerLaser(mouseX, mouseY);
+            }
+        });
+
+        function triggerSlash() {
+            boss.state = 'slash';
+            boss.stateTimer = 0;
+        }
+
+        function triggerLaser(tx, ty) {
+            boss.state = 'laser';
+            boss.stateTimer = 0;
+            boss.laserTargetX = tx;
+            boss.laserTargetY = ty;
+        }
+
+        // 邏輯更新
+        function update() {
+            boss.angle += 0.04;
+
+            // 待機狀態：大刀隨呼吸輕微晃動
+            if (boss.state === 'idle') {
+                boss.swordAngle = -0.4 + Math.sin(boss.angle * 0.5) * 0.1;
+            }
+
+            // 揮刀狀態邏輯（利用計時器控制前搖、下劈、收刀）
+            if (boss.state === 'slash') {
+                boss.stateTimer += 1;
+                
+                if (boss.stateTimer <= 10) { 
+                    // 1. 蓄力後仰：刀往後舉
+                    boss.swordAngle -= 0.1;
+                } else if (boss.stateTimer <= 16) { 
+                    // 2. 神速下劈：刀瘋狂往前揮
+                    boss.swordAngle += 0.4;
+                } else if (boss.stateTimer <= 35) { 
+                    // 3. 緩慢收刀回原位
+                    boss.swordAngle -= 0.08;
+                } else {
+                    // 動作結束，回到待機
+                    boss.state = 'idle';
+                }
+            }
+
+            // 激光狀態邏輯
+            if (boss.state === 'laser') {
+                boss.stateTimer += 1;
+                if (boss.stateTimer <= 8) {
+                    // 激光瞬間變粗
+                    boss.laserWidth = (boss.stateTimer / 8) * 35;
+                } else if (boss.stateTimer <= 40) {
+                    // 持續噴射並逐漸變細
+                    boss.laserWidth = 35 * (1 - (boss.stateTimer - 8) / 32);
+                } else {
+                    boss.state = 'idle';
+                    boss.laserWidth = 0;
+                }
+            }
+        }
+
+        // 畫面繪製
+        function draw() {
+            // 清除畫布
+            ctx.fillStyle = '#121214';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 2. 更新 Boss 的動態數值（利用三角函數 Math.sin 做出平滑的來回效果）
-            boss.angle += 0.05; 
-            
-            // 呼吸效果：讓身體半徑在 58 ~ 62 之間緩慢變動
-            boss.currentRadius = boss.baseRadius + Math.sin(boss.angle) * 2;
-            
-            // 眼睛發光效果：讓光暈隨機閃爍，更有生命感
-            boss.eyeGlow = 10 + Math.random() * 10 + Math.sin(boss.angle) * 5;
+            // 計算呼吸造成的上下微調高度
+            const bobbing = Math.sin(boss.angle) * 3;
+            const bx = boss.x;
+            const by = boss.y + bobbing;
 
-            // 3. 開始繪製 Boss
+            // ------------------ 【1. 繪製激光 (最底層)】 ------------------
+            if (boss.state === 'laser' && boss.laserWidth > 0) {
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = '#00ffff';
+                
+                // 外層亮藍色粗激光
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
+                ctx.lineWidth = boss.laserWidth;
+                ctx.beginPath();
+                ctx.moveTo(bx, by - 15); // 從眼睛/頭部位置發射
+                ctx.lineTo(boss.laserTargetX, boss.laserTargetY);
+                ctx.stroke();
+
+                // 內層純白色核心，看起來能量極高
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = boss.laserWidth * 0.4;
+                ctx.beginPath();
+                ctx.moveTo(bx, by - 15);
+                ctx.lineTo(boss.laserTargetX, boss.laserTargetY);
+                ctx.stroke();
+
+                ctx.shadowBlur = 0;
+            }
+
+            // ------------------ 【2. 繪製大刀武器 (右手)】 ------------------
+            ctx.save();
+            ctx.translate(bx + 40, by + 10); // 將座標軸移到 Boss 的右肩膀關節
+            ctx.rotate(boss.swordAngle);      // 旋轉大刀的角度
+
+            // 刀柄
+            ctx.fillStyle = '#444';
+            ctx.fillRect(-5, 0, 10, 30);
             
-            // 【特效一：旋轉收縮的藍色防護罩】
-            let shieldRadius = boss.currentRadius + 30 + Math.cos(boss.angle * 1.5) * 5;
-            let shieldGlow = ctx.createRadialGradient(boss.x, boss.y, boss.currentRadius, boss.x, boss.y, shieldRadius);
-            shieldGlow.addColorStop(0, 'rgba(0, 191, 255, 0.4)'); // 靠近身體是藍色
-            shieldGlow.addColorStop(0.7, 'rgba(0, 255, 255, 0.2)'); // 中間亮藍
-            shieldGlow.addColorStop(1, 'rgba(0, 191, 255, 0)');   // 外圈透明
-            
-            ctx.fillStyle = shieldGlow;
+            // 護手
+            ctx.fillStyle = '#888';
+            ctx.fillRect(-20, -5, 40, 8);
+
+            // 巨型能量刀刃
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff3300';
+            ctx.fillStyle = '#ff5500'; // 炙熱的橘紅色
             ctx.beginPath();
-            ctx.arc(boss.x, boss.y, shieldRadius, 0, Math.PI * 2);
+            ctx.moveTo(-12, -5);       // 刀刃底部左
+            ctx.lineTo(12, -5);        // 刀刃底部右
+            ctx.lineTo(8, -140);       // 刀尖右
+            ctx.lineTo(-2, -160);      // 鋒利的刀尖
+            ctx.closePath();
             ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.restore();
 
-            // 【特效二：Boss 本體（帶漸層的暗紅色球體）】
-            let bodyGlow = ctx.createRadialGradient(boss.x - 15, boss.y - 15, 5, boss.x, boss.y, boss.currentRadius);
-            bodyGlow.addColorStop(0, '#ff4d4d'); // 受光面亮紅
-            bodyGlow.addColorStop(1, '#800000'); // 背光面暗紅
+            // ------------------ 【3. 繪製人形本體】 ------------------
             
-            ctx.fillStyle = bodyGlow;
+            // A. 肩膀與胸甲 (矩形組合)
+            ctx.fillStyle = '#3a0000'; // 暗紅裝甲
+            ctx.fillRect(bx - 45, by + 5, 90, 45); // 主胸甲
+            ctx.fillStyle = '#ff3333';
+            ctx.fillRect(bx - 55, by, 25, 20);    // 左肩甲
+            ctx.fillRect(bx + 30, by, 25, 20);    // 右肩甲
+
+            // B. 核心反應爐 (胸口發光圓)
+            ctx.fillStyle = boss.state === 'laser' ? '#00ffff' : '#ffcc00';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = ctx.fillStyle;
             ctx.beginPath();
-            ctx.arc(boss.x, boss.y, boss.currentRadius, 0, Math.PI * 2);
+            ctx.arc(bx, by + 25, 8, 0, Math.PI * 2);
             ctx.fill();
-
-            // 【特效三：發光的憤怒眼睛】
-            ctx.fillStyle = '#ffeb3b';
-            ctx.shadowBlur = boss.eyeGlow;     // 套用動態發光強度
-            ctx.shadowColor = '#ffeb3b';       // 光暈顏色
-            
-            // 左眼（微幅隨呼吸上下微調）
-            ctx.fillRect(boss.x - 25, boss.y - 15 + Math.sin(boss.angle) * 0.5, 16, 8); 
-            // 右眼
-            ctx.fillRect(boss.x + 9, boss.y - 15 + Math.sin(boss.angle) * 0.5, 16, 8); 
-            
-            // 重設發光濾鏡（避免影響到其他繪圖）
             ctx.shadowBlur = 0;
 
-            // 【文字提示】
-            ctx.fillStyle = '#555';
-            ctx.font = '16px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Boss 處於待機狀態...', canvas.width / 2, canvas.height - 50);
+            // C. 脖子
+            ctx.fillStyle = '#222';
+            ctx.fillRect(bx - 10, by - 12, 20, 15);
 
-            // 4. 持續循環執行
+            // D. 頭部 (帶有科技感面具的圓形)
+            ctx.fillStyle = '#5a0000';
+            ctx.beginPath();
+            ctx.arc(bx, by - 25, 22, 0, Math.PI * 2);
+            ctx.fill();
+
+            // E. 鋼鐵眼罩/護目鏡 (點擊時會改變顏色與發光)
+            if (boss.state === 'laser') {
+                ctx.fillStyle = '#00ffff'; // 噴激光時雙眼呈充能藍色
+                ctx.shadowColor = '#00ffff';
+            } else {
+                ctx.fillStyle = '#ff0055'; // 平時是兇狠的紅色
+                ctx.shadowColor = '#ff0055';
+            }
+            ctx.shadowBlur = 15 + Math.sin(boss.angle * 2) * 5;
+            ctx.fillRect(bx - 14, by - 30, 28, 6);
+            ctx.shadowBlur = 0;
+
+
+            // ------------------ 【4. 介面文字】 ------------------
+            ctx.fillStyle = '#888';
+            ctx.font = '16px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('點擊畫面任何地方觸發 Boss 攻擊！', canvas.width / 2, canvas.height - 40);
+            
+            ctx.fillStyle = '#444';
+            ctx.font = '12px monospace';
+            ctx.fillText(`目前狀態: ${boss.state.toUpperCase()}`, canvas.width / 2, canvas.height - 15);
+        }
+
+        // 遊戲主循環
+        function gameLoop() {
+            update();
+            draw();
             requestAnimationFrame(gameLoop);
         }
 
-        // 啟動遊戲
         gameLoop();
     </script>
 </body>
 </html>
-
