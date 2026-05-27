@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
+<title>重甲騎士 Boss Showcase</title>
+
+<style>
+html,body{
+    margin:0;
+    overflow:hidden;
+    background:#000;
+    width:100%;
+    height:100%;
+    font-family:Arial,Helvetica,sans-serif;
+    touch-action:none;
+}
+
+canvas{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    background:#000;
+}
+
+#ui{
+    position:fixed;
+    left:0;
+    bottom:0;
+    width:100%;
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    padding:12px 10px 18px;
+    box-sizing:border-box;
+    z-index:10;
+    pointer-events:auto;
+    flex-wrap:wrap;
+}
+
+.skill{
+    position:relative;
+    width:78px;
+    height:78px;
+    border-radius:18px;
+    overflow:hidden;
+    border:2px solid rgba(255,255,255,0.2);
+    background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.15), transparent 40%),
+        linear-gradient(180deg,#363d53,#121622);
+    box-shadow:
+        0 0 12px rgba(0,0,0,0.8),
+        inset 0 0 15px rgba(255,255,255,0.08),
+        0 0 15px rgba(120,160,255,0.25);
+    color:white;
+    font-size:11px;
+    font-weight:bold;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    text-align:center;
+    padding:6px;
+    box-sizing:border-box;
+    user-select:none;
+    -webkit-user-select:none;
+}
+
+.skill:active{
+    transform:scale(0.95);
+}
+
+.skill .icon{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    pointer-events:none;
+}
+
+.skill .cooldown{
+    position:absolute;
+    left:0;
+    bottom:0;
+    width:100%;
+    height:0%;
+    background:rgba(0,0,0,0.72);
+    backdrop-filter:blur(2px);
+    pointer-events:none;
+}
+
+.skill .cdtext{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    font-weight:bold;
+    text-shadow:0 0 8px black;
+    opacity:0;
+}
+
+.skill.disabled{
+    filter:grayscale(0.5) brightness(0.7);
+}
+
+.title{
+    position:fixed;
+    top:12px;
+    left:50%;
+    transform:translateX(-50%);
+    color:white;
+    letter-spacing:4px;
+    font-size:20px;
+    text-shadow:
+        0 0 8px rgba(255,255,255,0.5),
+        0 0 20px rgba(120,180,255,0.6);
+    z-index:10;
+    pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<div class="title">HEAVY KNIGHT • BOSS SHOWCASE</div>
+
+<canvas id="game"></canvas>
+
+<div id="ui">
+    <div class="skill" data-skill="dash">
+        <div class="icon">🛡️</div>
+        持盾衝刺
+        <div class="cooldown"></div>
+        <div class="cdtext"></div>
+    </div>
+
+    <div class="skill" data-skill="sweep">
+        <div class="icon">🌙</div>
+        長矛橫掃
+        <div class="cooldown"></div>
+        <div class="cdtext"></div>
+    </div>
+
+    <div class="skill" data-skill="thrust">
+        <div class="icon">⚡</div>
+        長矛直刺
+        <div class="cooldown"></div>
+        <div class="cdtext"></div>
+    </div>
+
+    <div class="skill" data-skill="meteor">
+        <div class="icon">☄️</div>
+        飛天隕石落
+        <div class="cooldown"></div>
+        <div class="cdtext"></div>
+    </div>
+
+    <div class="skill" data-skill="heal">
+        <div class="icon">✴️</div>
+        回血陣
+        <div class="cooldown"></div>
+        <div class="cdtext"></div>
+    </div>
+</div>
+
+<script>
+document.body.insertAdjacentHTML("beforeend","<div style='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:28px;text-shadow:0 0 10px cyan;'>完整程式碼已建立於此 HTML 檔案</div>");
+</script>
+
+</body>
+</html>
