@@ -1,1216 +1,1554 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
-<title>水雞重甲騎士</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>重甲騎士 BOSS</title>
 <style>
-html,body{
-    margin:0;
-    overflow:hidden;
-    background:#000;
-    width:100%;
-    height:100%;
-    font-family:Arial,Helvetica,sans-serif;
-    touch-action:none;
-}
-
-canvas{
-    position:fixed;
-    inset:0;
-    width:100%;
-    height:100%;
-    background:#000;
-}
-
-#ui{
-    position:fixed;
-    left:0;
-    bottom:0;
-    width:100%;
-    display:flex;
-    justify-content:center;
-    gap:10px;
-    padding:12px 10px 18px;
-    box-sizing:border-box;
-    z-index:10;
-    pointer-events:auto;
-    flex-wrap:wrap;
-}
-
-.skill{
-    position:relative;
-    width:78px;
-    height:78px;
-    border-radius:18px;
-    overflow:hidden;
-    border:2px solid rgba(255,255,255,0.2);
-    background:
-        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.15), transparent 40%),
-        linear-gradient(180deg,#363d53,#121622);
-    box-shadow:
-        0 0 12px rgba(0,0,0,0.8),
-        inset 0 0 15px rgba(255,255,255,0.08),
-        0 0 15px rgba(120,160,255,0.25);
-    color:white;
-    font-size:11px;
-    font-weight:bold;
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
-    text-align:center;
-    padding:6px;
-    box-sizing:border-box;
-    user-select:none;
-    -webkit-user-select:none;
-}
-
-.skill:active{
-    transform:scale(0.95);
-}
-
-.skill .icon{
-    position:absolute;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:28px;
-    pointer-events:none;
-}
-
-.skill .cooldown{
-    position:absolute;
-    left:0;
-    bottom:0;
-    width:100%;
-    height:0%;
-    background:rgba(0,0,0,0.72);
-    backdrop-filter:blur(2px);
-    pointer-events:none;
-}
-
-.skill .cdtext{
-    position:absolute;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:18px;
-    font-weight:bold;
-    text-shadow:0 0 8px black;
-    opacity:0;
-}
-
-.skill.disabled{
-    filter:grayscale(0.5) brightness(0.7);
-}
-
-.title{
-    position:fixed;
-    top:12px;
-    left:50%;
-    transform:translateX(-50%);
-    color:white;
-    letter-spacing:4px;
-    font-size:20px;
-    text-shadow:
-        0 0 8px rgba(255,255,255,0.5),
-        0 0 20px rgba(120,180,255,0.6);
-    z-index:10;
-    pointer-events:none;
-}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:'Segoe UI',sans-serif;touch-action:none}
+#c{display:block;margin:0 auto}
+#ui{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:6px 4px 10px;display:flex;gap:4px;justify-content:center;background:linear-gradient(transparent,rgba(0,0,0,.92));z-index:10}
+.sb{position:relative;flex:1;height:62px;border:2px solid rgba(255,200,80,.6);border-radius:8px;background:linear-gradient(160deg,rgba(30,20,5,.95),rgba(60,40,10,.95));color:#f0c040;font-size:8.5px;font-weight:700;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;user-select:none;-webkit-tap-highlight-color:transparent;box-shadow:0 0 8px rgba(255,180,0,.3)}
+.sb.cd{cursor:not-allowed;border-color:rgba(100,80,30,.4);color:rgba(150,120,30,.5)}
+.sb .ico{font-size:18px;line-height:1}
+.sb .cdov{position:absolute;left:0;bottom:0;width:100%;height:0;background:rgba(0,0,0,.75);pointer-events:none}
+.sb .cdt{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:900;color:#fff;text-shadow:0 0 8px #fff;pointer-events:none;display:none}
+.sb.cd .cdt{display:block}
+#hb{position:fixed;top:10px;left:50%;transform:translateX(-50%);width:240px;z-index:10;text-align:center}
+#hl{color:#f0c040;font-size:10px;font-weight:700;letter-spacing:2px;text-shadow:0 0 8px #f80;margin-bottom:3px}
+#ht{height:12px;background:rgba(0,0,0,.6);border:2px solid rgba(255,150,0,.5);border-radius:6px;overflow:hidden;box-shadow:0 0 10px rgba(255,100,0,.4)}
+#hf{height:100%;background:linear-gradient(90deg,#f30,#f80,#fc0);border-radius:4px;transition:width .4s;box-shadow:0 0 10px #f60}
 </style>
 </head>
 <body>
-
-<div class="title">HEAVY KNIGHT • BOSS SHOWCASE</div>
-
-<canvas id="game"></canvas>
-
+<canvas id="c"></canvas>
+<div id="hb"><div id="hl">⚔ 鐵血騎士 IRONCLAD ⚔</div><div id="ht"><div id="hf" style="width:100%"></div></div></div>
 <div id="ui">
-    <div class="skill" data-skill="dash">
-        <div class="icon">🛡️</div>
-        持盾衝刺
-        <div class="cooldown"></div>
-        <div class="cdtext"></div>
-    </div>
-
-    <div class="skill" data-skill="sweep">
-        <div class="icon">🌙</div>
-        長矛橫掃
-        <div class="cooldown"></div>
-        <div class="cdtext"></div>
-    </div>
-
-    <div class="skill" data-skill="thrust">
-        <div class="icon">⚡</div>
-        長矛直刺
-        <div class="cooldown"></div>
-        <div class="cdtext"></div>
-    </div>
-
-    <div class="skill" data-skill="meteor">
-        <div class="icon">☄️</div>
-        飛天大操
-        <div class="cooldown"></div>
-        <div class="cdtext"></div>
-    </div>
-
-    <div class="skill" data-skill="heal">
-        <div class="icon">✴️</div>
-        回血陣
-        <div class="cooldown"></div>
-        <div class="cdtext"></div>
-    </div>
+  <button class="sb" id="b0" onclick="cast(0)"><span class="ico">🛡</span><span>持盾衝刺</span><div class="cdov" id="o0"></div><div class="cdt" id="t0"></div></button>
+  <button class="sb" id="b1" onclick="cast(1)"><span class="ico">⚔</span><span>長矛橫掃</span><div class="cdov" id="o1"></div><div class="cdt" id="t1"></div></button>
+  <button class="sb" id="b2" onclick="cast(2)"><span class="ico">🗡</span><span>長矛直刺</span><div class="cdov" id="o2"></div><div class="cdt" id="t2"></div></button>
+  <button class="sb" id="b3" onclick="cast(3)"><span class="ico">☄</span><span>飛天隕石</span><div class="cdov" id="o3"></div><div class="cdt" id="t3"></div></button>
+  <button class="sb" id="b4" onclick="cast(4)"><span class="ico">✨</span><span>回血法陣</span><div class="cdov" id="o4"></div><div class="cdt" id="t4"></div></button>
 </div>
-
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-
-let W = innerWidth;
-let H = innerHeight;
-
+// ═══════════════════════════════════════
+// CANVAS SETUP
+// ═══════════════════════════════════════
+const cv=document.getElementById('c'),g=cv.getContext('2d');
+let W,H,GY;
 function resize(){
-    W = canvas.width = innerWidth;
-    H = canvas.height = innerHeight;
+  W=cv.width=Math.min(window.innerWidth,480);
+  H=cv.height=window.innerHeight-80;
+  GY=H*0.72;
 }
-addEventListener("resize",resize);
 resize();
+window.addEventListener('resize',resize);
 
-const groundY = () => H * 0.79;
+let T=0,dt=0,last=performance.now();
 
-let last = 0;
-let time = 0;
-
-let screenShake = 0;
-
-function rand(a,b){
-    return Math.random()*(b-a)+a;
+// ═══════════════════════════════════════
+// SCREEN SHAKE
+// ═══════════════════════════════════════
+const SK={x:0,y:0,p:0,l:0,ml:1};
+function shk(p,d){SK.p=p;SK.l=SK.ml=d;}
+function updateShake(){
+  if(SK.l>0){
+    SK.l-=dt;
+    const f=Math.max(0,SK.l/SK.ml);
+    SK.x=(Math.random()-.5)*SK.p*f*2;
+    SK.y=(Math.random()-.5)*SK.p*f*2;
+  }else{SK.x=0;SK.y=0;}
 }
 
-function clamp(v,a,b){
-    return Math.max(a,Math.min(b,v));
+// ═══════════════════════════════════════
+// EFFECT POOLS
+// ═══════════════════════════════════════
+let PARTS=[],GHOSTS=[],CRACKS=[],WAVES=[],ORBS=[];
+let SWEEPARC=null,TFLASH=null,WARN=null,METEOR=null,HEALMAGIC=null;
+
+function P(x,y,vx,vy,life,r,col,glow,grav){
+  PARTS.push({x,y,vx,vy,life,ml:life,r,col,glow:glow||null,grav:grav||0});
 }
-
-function lerp(a,b,t){
-    return a+(b-a)*t;
+function burst(x,y,n,s0,s1,life,r,cols,glow,grav){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,s=s0+Math.random()*(s1-s0);
+    P(x,y,Math.cos(a)*s,Math.sin(a)*s,life+Math.random()*life*.5,
+      r+Math.random()*r,cols[i%cols.length],glow,grav||.15);
+  }
 }
-
-const stars = [];
-for(let i=0;i<180;i++){
-    stars.push({
-        x:Math.random()*W,
-        y:Math.random()*H*0.6,
-        s:Math.random()*2.5,
-        a:Math.random(),
-        v:rand(0.05,0.4)
-    });
+function dustLine(x,y,dir,n){
+  for(let i=0;i<n;i++)
+    P(x+(Math.random()-.5)*14,y,dir*(2+Math.random()*6),
+      -(Math.random()*2+.5),350+Math.random()*400,
+      2+Math.random()*3,'#b08060',null,.05);
 }
-
-const fogs = [];
-for(let i=0;i<25;i++){
-    fogs.push({
-        x:rand(0,W),
-        y:rand(0,H*0.6),
-        r:rand(120,280),
-        vx:rand(-0.08,0.08),
-        vy:rand(-0.02,0.02),
-        hue:rand(240,320)
-    });
-}
-
-const particles = [];
-const cracks = [];
-const slashArcs = [];
-const shockwaves = [];
-const afterImages = [];
-const healRunes = [];
-
-function spawnParticle(o){
-    particles.push({
-        x:o.x,
-        y:o.y,
-        vx:o.vx||0,
-        vy:o.vy||0,
-        life:o.life||1,
-        max:o.life||1,
-        size:o.size||4,
-        color:o.color||"white",
-        glow:o.glow||0,
-        gravity:o.gravity||0,
-        alpha:o.alpha===undefined?1:o.alpha,
-        type:o.type||"circle"
-    });
-}
-
-function createCracks(x,y){
-    for(let i=0;i<15;i++){
-        let ang = (Math.PI*2/15)*i + rand(-0.25,0.25);
-        let len = rand(60,170);
-
-        const segs = [];
-        let px = x;
-        let py = y;
-
-        for(let s=0;s<8;s++){
-            let d = len/8;
-            px += Math.cos(ang + rand(-0.3,0.3))*d;
-            py += Math.sin(ang + rand(-0.3,0.3))*d;
-            segs.push({x:px,y:py});
-        }
-
-        cracks.push({
-            x,
-            y,
-            segs,
-            life:3
-        });
+function wave(x,y,maxR,col,dur){WAVES.push({x,y,r:0,maxR,col,life:dur,ml:dur});}
+function makeCracks(cx,cy,n){
+  const out=[];
+  for(let i=0;i<n;i++){
+    const ang=(i/n)*Math.PI*2+Math.random()*.45;
+    const len=55+Math.random()*110;
+    const pts=[{x:cx,y:cy}];
+    let bx=cx,by=cy,ba=ang;
+    for(let s=0;s<5;s++){
+      const sl=len/5*(.5+Math.random()*.9);
+      bx+=Math.cos(ba)*sl; by+=Math.sin(ba)*sl;
+      pts.push({x:bx,y:by}); ba+=(Math.random()-.5)*.75;
     }
+    out.push({pts,life:4200,ml:4200,w:1.8+Math.random()*2.6});
+  }
+  return out;
 }
 
-const knight = {
-    x:W*0.5,
-    y:groundY()-170,
-    baseY:groundY()-170,
-    vx:0,
-    vy:0,
-    scale:1,
-    face:1,
+// ═══════════════════════════════════════
+// COOLDOWN
+// ═══════════════════════════════════════
+const CD_TIMES=[4000,5500,3500,9000,7000];
+let cdR=[0,0,0,0,0],cdM=[0,0,0,0,0],hp=100;
+function updateCD(){
+  for(let i=0;i<5;i++){
+    if(cdR[i]>0){
+      cdR[i]-=dt;
+      if(cdR[i]<=0){
+        cdR[i]=0;
+        document.getElementById('b'+i).classList.remove('cd');
+        document.getElementById('o'+i).style.height='0%';
+        document.getElementById('t'+i).textContent='';
+      }else{
+        document.getElementById('o'+i).style.height=(cdR[i]/cdM[i]*100)+'%';
+        document.getElementById('t'+i).textContent=(cdR[i]/1000).toFixed(1);
+      }
+    }
+  }
+}
+function cast(i){
+  if(cdR[i]>0||KN.state!=='idle')return;
+  cdR[i]=cdM[i]=CD_TIMES[i];
+  document.getElementById('b'+i).classList.add('cd');
+  [startDash,startSweep,startThrust,startMeteor,startHeal][i]();
+}
 
-    state:"idle",
-    stateTime:0,
+// ═══════════════════════════════════════
+// MATH UTILS
+// ═══════════════════════════════════════
+function lerp(a,b,t){return a+(b-a)*t;}
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+function easeOut3(t){return 1-(1-t)*(1-t)*(1-t);}
+function easeInOut(t){return t<.5?2*t*t:1-2*(1-t)*(1-t);}
 
-    breathing:0,
+// rounded rect helper
+function rr(x,y,w,h,r){
+  g.beginPath();
+  g.moveTo(x+r,y);g.lineTo(x+w-r,y);
+  g.quadraticCurveTo(x+w,y,x+w,y+r);
+  g.lineTo(x+w,y+h-r);g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  g.lineTo(x+r,y+h);g.quadraticCurveTo(x,y+h,x,y+h-r);
+  g.lineTo(x,y+r);g.quadraticCurveTo(x,y,x+r,y);
+  g.closePath();
+}
 
-    spearExtend:1,
-    sweepAngle:0,
+// ═══════════════════════════════════════════════════════════════
+// FULL SKELETAL SYSTEM
+// ═══════════════════════════════════════════════════════════════
+// Each joint is an object with:
+//   angle   – local rotation (rad) relative to parent's world direction
+//   tAngle  – target angle (lerped toward)
+//   speed   – lerp speed (higher = snappier)
+//   len     – bone length (distance from this joint pivot to child pivot)
+//   wx,wy   – world position of this joint pivot (computed by FK)
+//   wa      – world angle (computed by FK)
+// ═══════════════════════════════════════════════════════════════
 
-    meteorTargetX:W*0.5,
+function mkJoint(angle,len,speed){
+  return {angle:angle,tAngle:angle,speed:speed||8,len:len,wx:0,wy:0,wa:0};
+}
 
-    hpGlow:0
+const J={
+  // ── PELVIS (root pivot, positioned at hipY in world) ──
+  pelvis:    mkJoint(0, 0, 99),   // always at hip world pos
+
+  // ── SPINE (3 segments, goes upward so base angle = -PI/2) ──
+  spineLow:  mkJoint(-Math.PI/2, 24, 12),
+  spineMid:  mkJoint(0,          24, 12),
+  spineHigh: mkJoint(0,          22, 12),
+
+  // ── NECK + HEAD ──
+  neck:      mkJoint(0, 14, 14),
+  head:      mkJoint(0,  0, 14),
+
+  // ── LEFT CLAVICLE + ARM (shield side) ──
+  lClav:     mkJoint(Math.PI*.55,  16, 12),
+  lUpper:    mkJoint(Math.PI*.3,   34, 10),
+  lLower:    mkJoint(-Math.PI*.25, 28, 10),
+  lHand:     mkJoint(0,            10, 10),
+
+  // ── RIGHT CLAVICLE + ARM (spear side) ──
+  rClav:     mkJoint(-Math.PI*.55, 16, 12),
+  rUpper:    mkJoint(-Math.PI*.25, 34, 10),
+  rLower:    mkJoint(Math.PI*.3,   28, 10),
+  rHand:     mkJoint(0,            10, 10),
+
+  // ── LEFT LEG ──
+  lHip:      mkJoint(Math.PI*.08,  0,  10),  // offset pivot
+  lThigh:    mkJoint(Math.PI*.1,   38, 10),
+  lShin:     mkJoint(Math.PI*.05,  34, 10),
+  lFoot:     mkJoint(-Math.PI*.12, 18, 10),
+  lToe:      mkJoint(Math.PI*.05,   8, 10),
+
+  // ── RIGHT LEG ──
+  rHip:      mkJoint(-Math.PI*.08, 0,  10),
+  rThigh:    mkJoint(-Math.PI*.1,  38, 10),
+  rShin:     mkJoint(-Math.PI*.05, 34, 10),
+  rFoot:     mkJoint(Math.PI*.12,  18, 10),
+  rToe:      mkJoint(-Math.PI*.05,  8, 10),
+
+  // ── SPEAR segments ──
+  spearBase: mkJoint(0, 50, 14),
+  spearMid:  mkJoint(0, 55, 14),
+  spearTip:  mkJoint(0,  0, 14),
 };
 
-const cooldowns = {
-    dash:{cd:4,t:0},
-    sweep:{cd:3,t:0},
-    thrust:{cd:2,t:0},
-    meteor:{cd:7,t:0},
-    heal:{cd:6,t:0}
+// Idle reference angles
+const IDLE_ANGLES={
+  pelvis:    0,
+  spineLow:  -Math.PI/2,
+  spineMid:  0,
+  spineHigh: 0,
+  neck:      0,
+  head:      0,
+  lClav:     Math.PI*.52,
+  lUpper:    Math.PI*.28,
+  lLower:    -Math.PI*.22,
+  lHand:     0,
+  rClav:     -Math.PI*.52,
+  rUpper:    -Math.PI*.22,
+  rLower:    Math.PI*.28,
+  rHand:     0,
+  lHip:      Math.PI*.08,
+  lThigh:    Math.PI*.1,
+  lShin:     Math.PI*.05,
+  lFoot:     -Math.PI*.12,
+  lToe:      Math.PI*.05,
+  rHip:      -Math.PI*.08,
+  rThigh:    -Math.PI*.1,
+  rShin:     -Math.PI*.05,
+  rFoot:     Math.PI*.12,
+  rToe:      -Math.PI*.05,
+  spearBase: 0,
+  spearMid:  0,
+  spearTip:  0,
 };
 
-document.querySelectorAll(".skill").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-        const skill = btn.dataset.skill;
-        triggerSkill(skill);
-    });
-});
+function setTargetAngles(obj){
+  for(const k in obj){
+    if(J[k]) J[k].tAngle=obj[k];
+  }
+}
+function setIdleAngles(){setTargetAngles(IDLE_ANGLES);}
 
-function triggerSkill(skill){
-    if(cooldowns[skill].t>0)return;
-
-    cooldowns[skill].t = cooldowns[skill].cd;
-
-    if(skill==="dash"){
-        knight.state="dashCharge";
-        knight.stateTime=0;
-    }
-
-    if(skill==="sweep"){
-        knight.state="sweepCharge";
-        knight.stateTime=0;
-    }
-
-    if(skill==="thrust"){
-        knight.state="thrust";
-        knight.stateTime=0;
-    }
-
-    if(skill==="meteor"){
-        knight.state="meteorRise";
-        knight.stateTime=0;
-    }
-
-    if(skill==="heal"){
-        knight.state="heal";
-        knight.stateTime=0;
-    }
+function lerpAllJoints(globalSpeedMult){
+  const m=globalSpeedMult||1;
+  for(const k in J){
+    const j=J[k];
+    const k2=clamp(j.speed*m*dt/1000,0,1);
+    j.angle=lerp(j.angle,j.tAngle,k2);
+  }
 }
 
-function updateCooldowns(dt){
-    document.querySelectorAll(".skill").forEach(btn=>{
-        const skill = btn.dataset.skill;
-        const cd = cooldowns[skill];
+// ═══════════════════════════════════════════════════════════════
+// FORWARD KINEMATICS
+// Computes wx,wy,wa for every joint
+// hipWorldX,hipWorldY = world position of pelvis pivot
+// facing = +1 or -1
+// ═══════════════════════════════════════════════════════════════
+let KN_FACING=1;
+let KN_HIP_X=0, KN_HIP_Y=0;
+let KN_LEAN=0;        // trunk lean (added to all spine angles)
+let KN_SQUAT=0;       // extra Y offset (positive = lower)
 
-        if(cd.t>0){
-            cd.t-=dt;
-            if(cd.t<0)cd.t=0;
-        }
+function runFK(){
+  const f=KN_FACING;
 
-        const ratio = cd.t/cd.cd;
+  // PELVIS
+  J.pelvis.wx=KN_HIP_X;
+  J.pelvis.wy=KN_HIP_Y+KN_SQUAT;
+  J.pelvis.wa=J.pelvis.angle;
 
-        const mask = btn.querySelector(".cooldown");
-        const text = btn.querySelector(".cdtext");
+  // SPINE (upward chain: spineLow → spineMid → spineHigh)
+  fkChain(J.pelvis, J.spineLow,  f, KN_LEAN);
+  fkChain(J.spineLow, J.spineMid, f, KN_LEAN*.3);
+  fkChain(J.spineMid, J.spineHigh,f, KN_LEAN*.2);
 
-        mask.style.height = (ratio*100)+"%";
+  // NECK + HEAD
+  fkChain(J.spineHigh, J.neck, f, 0);
+  fkChain(J.neck, J.head, f, 0);
 
-        if(ratio>0){
-            btn.classList.add("disabled");
-            text.style.opacity=1;
-            text.innerText = cd.t.toFixed(1);
-        }else{
-            btn.classList.remove("disabled");
-            text.style.opacity=0;
-        }
-    });
+  // LEFT ARM
+  fkChain(J.spineHigh, J.lClav,  f, 0);
+  fkChain(J.lClav,  J.lUpper, f, 0);
+  fkChain(J.lUpper, J.lLower, f, 0);
+  fkChain(J.lLower, J.lHand,  f, 0);
+
+  // RIGHT ARM
+  fkChain(J.spineHigh, J.rClav,  f, 0);
+  fkChain(J.rClav,  J.rUpper, f, 0);
+  fkChain(J.rUpper, J.rLower, f, 0);
+  fkChain(J.rLower, J.rHand,  f, 0);
+
+  // LEFT LEG (offset by -12*f from pelvis)
+  J.lHip.wx=J.pelvis.wx - 12*f;
+  J.lHip.wy=J.pelvis.wy;
+  J.lHip.wa=J.pelvis.wa + J.lHip.angle*f;
+  fkStep(J.lHip, J.lThigh, f, 0);
+  fkStep(J.lThigh, J.lShin, f, 0);
+  fkStep(J.lShin, J.lFoot, f, 0);
+  fkStep(J.lFoot, J.lToe, f, 0);
+
+  // RIGHT LEG (offset by +12*f from pelvis)
+  J.rHip.wx=J.pelvis.wx + 12*f;
+  J.rHip.wy=J.pelvis.wy;
+  J.rHip.wa=J.pelvis.wa + J.rHip.angle*f;
+  fkStep(J.rHip, J.rThigh, f, 0);
+  fkStep(J.rThigh, J.rShin, f, 0);
+  fkStep(J.rShin, J.rFoot, f, 0);
+  fkStep(J.rFoot, J.rToe, f, 0);
+
+  // SPEAR (child of rHand)
+  fkChain(J.rHand, J.spearBase, f, 0);
+  fkChain(J.spearBase, J.spearMid, f, 0);
+  fkChain(J.spearMid, J.spearTip, f, 0);
 }
 
-function update(dt){
-    time += dt;
-
-    updateCooldowns(dt);
-
-    screenShake *= 0.88;
-
-    knight.breathing += dt*2.5;
-
-    const breathe = Math.sin(knight.breathing)*4;
-
-    knight.hpGlow *= 0.92;
-
-    knight.stateTime += dt;
-
-    if(knight.state==="idle"){
-        knight.y = knight.baseY + breathe;
-        knight.spearExtend = lerp(knight.spearExtend,1,dt*6);
-    }
-
-    if(knight.state==="dashCharge"){
-        knight.x -= 250*dt;
-        knight.y = knight.baseY + Math.sin(time*14)*2;
-
-        if(knight.stateTime>0.4){
-            knight.state="dash";
-            knight.stateTime=0;
-        }
-    }
-
-    if(knight.state==="dash"){
-        knight.x += 1400*dt;
-
-        afterImages.push({
-            x:knight.x,
-            y:knight.y,
-            alpha:0.7,
-            scale:1
-        });
-
-        for(let i=0;i<5;i++){
-            spawnParticle({
-                x:knight.x-rand(30,80),
-                y:groundY()-rand(0,20),
-                vx:rand(-3,1),
-                vy:rand(-5,-1),
-                life:0.8,
-                size:rand(6,16),
-                color:"rgba(160,140,100,1)",
-                gravity:0.22
-            });
-        }
-
-        if(knight.stateTime>0.55){
-            knight.state="idle";
-            knight.stateTime=0;
-        }
-    }
-
-    if(knight.state==="sweepCharge"){
-        knight.sweepAngle = lerp(knight.sweepAngle,-1.8,dt*10);
-
-        if(knight.stateTime>0.5){
-            knight.state="sweep";
-            knight.stateTime=0;
-
-            slashArcs.push({
-                x:knight.x+110,
-                y:knight.y+40,
-                r:220,
-                start:-1.4,
-                end:1,
-                life:0.6
-            });
-
-            for(let i=0;i<60;i++){
-                spawnParticle({
-                    x:knight.x+130,
-                    y:knight.y+20,
-                    vx:rand(-6,6),
-                    vy:rand(-5,5),
-                    life:1,
-                    size:rand(3,9),
-                    color:"rgba(255,220,100,1)",
-                    glow:20
-                });
-            }
-
-            screenShake=10;
-        }
-    }
-
-    if(knight.state==="sweep"){
-        knight.sweepAngle += dt*9;
-
-        if(knight.stateTime>0.45){
-            knight.state="idle";
-            knight.sweepAngle=0;
-            knight.stateTime=0;
-        }
-    }
-
-    if(knight.state==="thrust"){
-        if(knight.stateTime<0.15){
-            knight.spearExtend = lerp(knight.spearExtend,0.6,dt*12);
-        }else{
-            knight.spearExtend = lerp(knight.spearExtend,3.2,dt*30);
-
-            if(knight.stateTime<0.22){
-                shockwaves.push({
-                    x:knight.x+300,
-                    y:knight.y+20,
-                    r:20,
-                    life:0.5
-                });
-
-                for(let i=0;i<20;i++){
-                    spawnParticle({
-                        x:knight.x+320,
-                        y:knight.y+20,
-                        vx:rand(-4,8),
-                        vy:rand(-3,3),
-                        life:0.45,
-                        size:rand(2,10),
-                        color:"rgba(255,255,255,1)",
-                        glow:25
-                    });
-                }
-            }
-        }
-
-        if(knight.stateTime>0.55){
-            knight.state="idle";
-            knight.spearExtend=1;
-            knight.stateTime=0;
-        }
-    }
-
-    if(knight.state==="meteorRise"){
-        knight.vy -= 1800*dt;
-        knight.y += knight.vy*dt;
-
-        if(knight.y<-400){
-            knight.state="meteorWait";
-            knight.stateTime=0;
-            knight.vy=0;
-        }
-    }
-
-    if(knight.state==="meteorWait"){
-        knight.meteorTargetX = W*0.5 + Math.sin(time*8)*120;
-
-        for(let i=0;i<2;i++){
-            spawnParticle({
-                x:knight.meteorTargetX+rand(-70,70),
-                y:groundY()+rand(-5,5),
-                vx:0,
-                vy:rand(-1,-4),
-                life:0.5,
-                size:rand(3,8),
-                color:"rgba(255,70,70,1)",
-                glow:20
-            });
-        }
-
-        if(knight.stateTime>0.8){
-            knight.state="meteorFall";
-            knight.stateTime=0;
-            knight.x = knight.meteorTargetX;
-            knight.y = -300;
-            knight.vy = 0;
-        }
-    }
-
-    if(knight.state==="meteorFall"){
-        knight.vy += 3200*dt;
-        knight.y += knight.vy*dt;
-
-        for(let i=0;i<12;i++){
-            spawnParticle({
-                x:knight.x+rand(-40,40),
-                y:knight.y+rand(-40,40),
-                vx:rand(-2,2),
-                vy:rand(-2,2),
-                life:0.7,
-                size:rand(8,18),
-                color:`rgba(${220+Math.random()*35},${80+Math.random()*120},0,1)`,
-                glow:35
-            });
-        }
-
-        if(knight.y>=knight.baseY){
-            knight.y = knight.baseY;
-
-            createCracks(knight.x,groundY()-4);
-
-            screenShake=35;
-
-            for(let i=0;i<160;i++){
-                spawnParticle({
-                    x:knight.x,
-                    y:groundY()-10,
-                    vx:rand(-14,14),
-                    vy:rand(-16,-2),
-                    life:1.6,
-                    size:rand(4,16),
-                    color:`rgba(${200+Math.random()*55},${80+Math.random()*80},0,1)`,
-                    glow:30,
-                    gravity:0.35
-                });
-            }
-
-            knight.state="idle";
-            knight.stateTime=0;
-            knight.vy=0;
-        }
-    }
-
-    if(knight.state==="heal"){
-        knight.hpGlow=1;
-
-        if(knight.stateTime<2){
-            for(let i=0;i<4;i++){
-                spawnParticle({
-                    x:knight.x+rand(-60,60),
-                    y:groundY()-rand(0,100),
-                    vx:rand(-1,1),
-                    vy:rand(-3,-0.5),
-                    life:1.2,
-                    size:rand(4,10),
-                    color:"rgba(80,255,160,1)",
-                    glow:30
-                });
-            }
-
-            if(Math.random()<0.3){
-                healRunes.push({
-                    ang:Math.random()*Math.PI*2,
-                    r:rand(70,120),
-                    rot:rand(-2,2),
-                    life:2
-                });
-            }
-        }
-
-        if(knight.stateTime>2.4){
-            knight.state="idle";
-            knight.stateTime=0;
-        }
-    }
-
-    if(knight.x>W+300){
-        knight.x=W*0.35;
-    }
-
-    for(let i=afterImages.length-1;i>=0;i--){
-        afterImages[i].alpha-=dt*1.6;
-        if(afterImages[i].alpha<=0){
-            afterImages.splice(i,1);
-        }
-    }
-
-    for(let i=particles.length-1;i>=0;i--){
-        const p = particles[i];
-
-        p.life-=dt;
-        p.x+=p.vx;
-        p.y+=p.vy;
-        p.vy+=p.gravity;
-
-        if(p.life<=0){
-            particles.splice(i,1);
-        }
-    }
-
-    for(let i=slashArcs.length-1;i>=0;i--){
-        slashArcs[i].life-=dt;
-        if(slashArcs[i].life<=0){
-            slashArcs.splice(i,1);
-        }
-    }
-
-    for(let i=shockwaves.length-1;i>=0;i--){
-        shockwaves[i].life-=dt;
-        shockwaves[i].r+=18;
-
-        if(shockwaves[i].life<=0){
-            shockwaves.splice(i,1);
-        }
-    }
-
-    for(let i=cracks.length-1;i>=0;i--){
-        cracks[i].life-=dt*0.4;
-        if(cracks[i].life<=0){
-            cracks.splice(i,1);
-        }
-    }
-
-    for(let i=healRunes.length-1;i>=0;i--){
-        healRunes[i].life-=dt;
-        healRunes[i].rot += dt*2;
-
-        if(healRunes[i].life<=0){
-            healRunes.splice(i,1);
-        }
-    }
-
-    fogs.forEach(f=>{
-        f.x += f.vx;
-        f.y += f.vy;
-
-        if(f.x>W+200)f.x=-200;
-        if(f.x<-200)f.x=W+200;
-    });
+// fkChain: parent drives child using parent's world angle + child's local angle
+// leanAdd: extra angle added (for trunk lean propagation)
+function fkChain(parent, child, f, leanAdd){
+  child.wa = parent.wa + child.angle*f + (leanAdd||0)*f;
+  child.wx = parent.wx + Math.cos(parent.wa)*parent.len;
+  child.wy = parent.wy + Math.sin(parent.wa)*parent.len;
+}
+// fkStep: for leg joints that go downward (angle relative to vertical)
+function fkStep(parent, child, f, extra){
+  // legs: angle is relative to "straight down" (PI/2)
+  child.wa = parent.wa + child.angle*f + (extra||0);
+  child.wx = parent.wx + Math.cos(child.wa)*parent.len;
+  child.wy = parent.wy + Math.sin(child.wa)*parent.len;
 }
 
-function drawBackground(){
-    const g = ctx.createLinearGradient(0,0,0,H);
+// ═══════════════════════════════════════════════════════════════
+// KNIGHT CONTROLLER
+// ═══════════════════════════════════════════════════════════════
+const KN={
+  worldX:0, worldY:0,
+  facing:1, visible:true,
+  state:'idle', phase:0, phaseT:0, stateT:0,
+  spearExtend:0,   // extra length added to spear segments
+};
 
-    g.addColorStop(0,"#15081f");
-    g.addColorStop(0.35,"#090511");
-    g.addColorStop(0.7,"#090909");
-    g.addColorStop(1,"#140d0a");
+// HIP is always at worldY - HIP_HEIGHT
+const HIP_HEIGHT=58;
 
-    ctx.fillStyle=g;
-    ctx.fillRect(0,0,W,H);
-
-    stars.forEach(s=>{
-        s.y += s.v;
-
-        if(s.y>H*0.7){
-            s.y = -10;
-            s.x = Math.random()*W;
-        }
-
-        ctx.beginPath();
-        ctx.fillStyle=`rgba(180,220,255,${0.2+s.a*0.8})`;
-        ctx.shadowBlur=15;
-        ctx.shadowColor="rgba(180,220,255,0.9)";
-        ctx.arc(s.x,s.y,s.s,0,Math.PI*2);
-        ctx.fill();
-    });
-
-    fogs.forEach(f=>{
-        const grd = ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,f.r);
-        grd.addColorStop(0,`hsla(${f.hue},70%,55%,0.09)`);
-        grd.addColorStop(1,"rgba(0,0,0,0)");
-
-        ctx.fillStyle=grd;
-        ctx.beginPath();
-        ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
-        ctx.fill();
-    });
+function updateKnightHip(){
+  KN_HIP_X=KN.worldX;
+  KN_HIP_Y=KN.worldY-HIP_HEIGHT;
+  KN_FACING=KN.facing;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// IDLE BREATHING
+// ═══════════════════════════════════════════════════════════════
+function updateIdle(){
+  const b=Math.sin(T*1.2);
+  const b2=Math.sin(T*0.8+0.5);
+  // Gentle spine sway
+  J.spineMid.angle=IDLE_ANGLES.spineMid+b*0.015;
+  J.spineHigh.angle=IDLE_ANGLES.spineHigh+b*0.02;
+  // Head slight nod
+  J.neck.angle=IDLE_ANGLES.neck+b*0.03;
+  J.head.angle=IDLE_ANGLES.head+b2*0.02;
+  // Arms drift with breath
+  J.lClav.angle=IDLE_ANGLES.lClav+b*0.03;
+  J.rClav.angle=IDLE_ANGLES.rClav-b*0.03;
+  J.lUpper.angle=IDLE_ANGLES.lUpper+b*0.04;
+  J.rUpper.angle=IDLE_ANGLES.rUpper-b*0.04;
+  // Subtle weight shift in hips
+  J.lThigh.angle=IDLE_ANGLES.lThigh+b2*0.02;
+  J.rThigh.angle=IDLE_ANGLES.rThigh-b2*0.02;
+  // Squat with breath
+  KN_SQUAT=-b*2.5;
+  KN_LEAN=0;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SKILL: DASH
+// ═══════════════════════════════════════════════════════════════
+let dashSX=0,dashEX=0,dashGT=0;
+function startDash(){
+  KN.state='dash';KN.phase=0;KN.phaseT=0;KN.stateT=0;KN.facing=1;GHOSTS=[];
+  dashSX=KN.worldX;dashEX=Math.min(W-70,KN.worldX+W*.44);
+  // TELEGRAPH: body coils back, shield arm draws back, legs crouch
+  setTargetAngles({
+    spineLow:  IDLE_ANGLES.spineLow,
+    spineMid:  -0.18,
+    spineHigh: -0.22,
+    neck:      0.1,
+    head:      0.1,
+    // Left (shield) arm: pulls shield back to protect body
+    lClav:     Math.PI*.65,
+    lUpper:    Math.PI*.55,
+    lLower:    -Math.PI*.05,
+    lHand:     Math.PI*.1,
+    // Right (spear) arm: coils far back
+    rClav:     -Math.PI*.80,
+    rUpper:    -Math.PI*.70,
+    rLower:    Math.PI*.60,
+    rHand:     -Math.PI*.2,
+    // Legs: deep crouch
+    lThigh:    Math.PI*.30,
+    lShin:     Math.PI*.55,
+    lFoot:     -Math.PI*.30,
+    rThigh:    Math.PI*.28,
+    rShin:     Math.PI*.52,
+    rFoot:     -Math.PI*.28,
+  });
+  // Speed up all joints for telegraph
+  for(const k in J) J[k].speed=14;
+}
+function updateDash(){
+  if(KN.phase===0){
+    lerpAllJoints(1);
+    KN_LEAN=-0.15;
+    KN_SQUAT=14;
+    if(KN.phaseT>380){
+      KN.phase=1;KN.phaseT=0;dashGT=0;
+      // BURST: full forward lunge
+      setTargetAngles({
+        spineMid:  0.28,
+        spineHigh: 0.32,
+        neck:      -0.12,
+        head:      -0.1,
+        // Shield arm: punches hard forward and slightly down
+        lClav:     Math.PI*.30,
+        lUpper:    -Math.PI*.28,
+        lLower:    Math.PI*.08,
+        lHand:     -Math.PI*.05,
+        // Spear arm: trails behind body
+        rClav:     -Math.PI*.35,
+        rUpper:    Math.PI*.40,
+        rLower:    Math.PI*.15,
+        rHand:     0,
+        // Back leg: drives hard (extended), front leg reaches
+        lThigh:    -Math.PI*.42,
+        lShin:     Math.PI*.08,
+        lFoot:     Math.PI*.30,
+        rThigh:    Math.PI*.48,
+        rShin:     Math.PI*.62,
+        rFoot:     -Math.PI*.35,
+      });
+      for(const k in J) J[k].speed=28;
+    }
+  } else if(KN.phase===1){
+    // Running animation layered on top of burst pose
+    const p=Math.min(1,KN.phaseT/310);
+    const e=easeOut3(p);
+    KN.worldX=dashSX-30+e*(dashEX-dashSX+30);
+    KN_LEAN=0.26;
+    KN_SQUAT=-4;
+
+    // Running leg cycle
+    const cyc=Math.sin(KN.phaseT*.052);
+    const cyc2=Math.cos(KN.phaseT*.052);
+    J.lThigh.angle=lerp(J.lThigh.angle,IDLE_ANGLES.lThigh+cyc*.65,.18);
+    J.lShin.angle=lerp(J.lShin.angle,IDLE_ANGLES.lShin+Math.abs(cyc)*.70,.18);
+    J.lFoot.angle=lerp(J.lFoot.angle,IDLE_ANGLES.lFoot+cyc*.30,.18);
+    J.rThigh.angle=lerp(J.rThigh.angle,IDLE_ANGLES.rThigh-cyc*.65,.18);
+    J.rShin.angle=lerp(J.rShin.angle,IDLE_ANGLES.rShin+Math.abs(cyc2)*.60,.18);
+    J.rFoot.angle=lerp(J.rFoot.angle,IDLE_ANGLES.rFoot-cyc*.28,.18);
+    // Arms pump opposite legs
+    J.lUpper.angle=lerp(J.lUpper.angle,IDLE_ANGLES.lUpper-cyc2*.22,.15);
+    J.rUpper.angle=lerp(J.rUpper.angle,IDLE_ANGLES.rUpper+cyc2*.18,.15);
+    // Spine subtle twist
+    J.spineMid.angle=lerp(J.spineMid.angle,0.28+cyc*.05,.1);
+
+    lerpAllJoints(1);
+
+    dashGT+=dt;
+    if(dashGT>14){
+      dashGT=0;
+      // snapshot current world positions for ghost
+      const snap={
+        wx:KN.worldX,wy:KN.worldY,f:KN.facing,life:500,ml:500,
+        // arm positions for ghost silhouette
+        lHx:J.lHand.wx,lHy:J.lHand.wy,
+        rHx:J.rHand.wx,rHy:J.rHand.wy,
+        hx:J.head.wx,hy:J.head.wy,
+        // hip
+        pWx:J.pelvis.wx,pWy:J.pelvis.wy,
+        // knees
+        lKx:J.lShin.wx,lKy:J.lShin.wy,
+        rKx:J.rShin.wx,rKy:J.rShin.wy,
+        // feet
+        lFx:J.lFoot.wx,lFy:J.lFoot.wy,
+        rFx:J.rFoot.wx,rFy:J.rFoot.wy,
+        // spear tip
+        sTx:J.spearTip.wx,sTy:J.spearTip.wy,
+        // spine
+        sHx:J.spineHigh.wx,sHy:J.spineHigh.wy,
+      };
+      GHOSTS.push(snap);
+    }
+    dustLine(KN.worldX,KN.worldY,-1,3);
+
+    if(p>=1){
+      KN.phase=2;KN.phaseT=0;
+      shk(10,280);
+      wave(KN.worldX,GY,100,'rgba(80,180,255,',400);
+      burst(KN.worldX,GY,24,2,9,440,3,['#8af','#4af','#06f'],'rgba(0,150,255,.8)',.1);
+      setIdleAngles();for(const k in J) J[k].speed=9;
+    }
+  } else if(KN.phase===2){
+    lerpAllJoints(1);KN_LEAN=lerp(KN_LEAN,0,.08);KN_SQUAT=lerp(KN_SQUAT,0,.08);
+    if(KN.phaseT>500){KN.state='idle';for(const k in J)J[k].speed=8;}
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SKILL: SWEEP
+// ═══════════════════════════════════════════════════════════════
+function startSweep(){
+  KN.state='sweep';KN.phase=0;KN.phaseT=0;KN.stateT=0;KN.facing=1;
+  // TELEGRAPH: whole right side winds back dramatically
+  setTargetAngles({
+    spineMid:  -0.20,
+    spineHigh: -0.24,
+    neck:      0.12,
+    // Shield arm guards
+    lClav:     Math.PI*.48,
+    lUpper:    Math.PI*.18,
+    lLower:    -Math.PI*.12,
+    lHand:     0,
+    // Spear arm: sweeps HARD to the back
+    rClav:     -Math.PI*.92,
+    rUpper:    -Math.PI*.85,
+    rLower:    Math.PI*.55,
+    rHand:     Math.PI*.3,
+    spearBase: -Math.PI*.4,
+    spearMid:  -Math.PI*.1,
+    // Feet: wide stance for power
+    lThigh:    Math.PI*.20,
+    lShin:     Math.PI*.30,
+    lFoot:     -Math.PI*.18,
+    rThigh:    -Math.PI*.22,
+    rShin:     Math.PI*.25,
+    rFoot:     Math.PI*.15,
+  });
+  for(const k in J) J[k].speed=11;
+}
+function updateSweep(){
+  if(KN.phase===0){
+    lerpAllJoints(1);
+    KN_LEAN=-0.18;KN_SQUAT=8;
+    if(KN.phaseT>500){
+      KN.phase=1;KN.phaseT=0;
+      // IMPACT: arm blasts forward 200+ degrees in one sweep
+      setTargetAngles({
+        spineMid:  0.28,
+        spineHigh: 0.32,
+        neck:      -0.14,
+        // Shield arm: opens out for counterbalance
+        lClav:     Math.PI*.38,
+        lUpper:    Math.PI*.45,
+        lLower:    -Math.PI*.35,
+        lHand:     Math.PI*.1,
+        // Spear arm: full forward blast
+        rClav:     -Math.PI*.30,
+        rUpper:    Math.PI*.88,
+        rLower:    Math.PI*.48,
+        rHand:     -Math.PI*.1,
+        spearBase: Math.PI*.25,
+        spearMid:  Math.PI*.05,
+        // Legs: front leg lunges
+        lThigh:    Math.PI*.30,
+        lShin:     Math.PI*.48,
+        lFoot:     -Math.PI*.28,
+        rThigh:    -Math.PI*.35,
+        rShin:     Math.PI*.18,
+        rFoot:     Math.PI*.20,
+      });
+      for(const k in J) J[k].speed=30;
+      SWEEPARC={
+        cx:KN.worldX+65*KN.facing,cy:KN.worldY-98,
+        r:128,startA:-2.15,endA:.95,life:780,ml:780,prog:0,
+      };
+      shk(13,350);
+      burst(KN.worldX+65,KN.worldY-98,52,3,15,700,4,
+        ['#fc0','#f80','#ff0','#fa0'],'rgba(255,200,0,.9)',.08);
+    }
+  } else if(KN.phase===1){
+    lerpAllJoints(1);
+    KN_LEAN=lerp(KN_LEAN,0.28,.12);KN_SQUAT=lerp(KN_SQUAT,4,.1);
+    if(SWEEPARC) SWEEPARC.prog=Math.min(1,KN.phaseT/720);
+    if(KN.phaseT>820){
+      KN.phase=2;KN.phaseT=0;setIdleAngles();
+      for(const k in J) J[k].speed=9;
+    }
+  } else if(KN.phase===2){
+    lerpAllJoints(1);KN_LEAN=lerp(KN_LEAN,0,.07);KN_SQUAT=lerp(KN_SQUAT,0,.07);
+    if(KN.phaseT>500) KN.state='idle';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SKILL: THRUST
+// ═══════════════════════════════════════════════════════════════
+let thrustHit=false,thrustLungeX=0;
+function startThrust(){
+  KN.state='thrust';KN.phase=0;KN.phaseT=0;KN.stateT=0;KN.facing=1;thrustHit=false;
+  thrustLungeX=KN.worldX;
+  // TELEGRAPH: coil arm back, wide lunge stance preparation
+  setTargetAngles({
+    spineMid:  -0.16,
+    spineHigh: -0.18,
+    neck:      0.08,
+    // Shield arm: raises to protect face during thrust
+    lClav:     Math.PI*.42,
+    lUpper:    Math.PI*.25,
+    lLower:    -Math.PI*.10,
+    lHand:     0,
+    // Spear: fully coiled elbow behind, like a javelin thrower
+    rClav:     -Math.PI*.70,
+    rUpper:    -Math.PI*.62,
+    rLower:    Math.PI*.72,
+    rHand:     -Math.PI*.18,
+    spearBase: Math.PI*.55,
+    spearMid:  Math.PI*.08,
+    // Front leg bends (lunge prep), back leg straight
+    lThigh:    Math.PI*.32,
+    lShin:     Math.PI*.58,
+    lFoot:     -Math.PI*.32,
+    lToe:      Math.PI*.08,
+    rThigh:    -Math.PI*.38,
+    rShin:     Math.PI*.08,
+    rFoot:     Math.PI*.28,
+    rToe:      -Math.PI*.08,
+  });
+  for(const k in J) J[k].speed=12;
+}
+function updateThrust(){
+  if(KN.phase===0){
+    lerpAllJoints(1);
+    KN_LEAN=-0.14;KN_SQUAT=10;
+    if(KN.phaseT>380){
+      KN.phase=1;KN.phaseT=0;thrustHit=false;
+      // LUNGE: arm shoots straight, body lurches forward
+      setTargetAngles({
+        spineMid:  0.22,
+        spineHigh: 0.25,
+        neck:      -0.10,
+        head:      -0.08,
+        // Shield: extended slightly forward for balance
+        lClav:     Math.PI*.36,
+        lUpper:    Math.PI*.08,
+        lLower:    -Math.PI*.05,
+        // Spear arm: STRAIGHT OUT, nearly locked elbow
+        rClav:     -Math.PI*.22,
+        rUpper:    -Math.PI*.08,
+        rLower:    Math.PI*.06,
+        rHand:     -Math.PI*.04,
+        spearBase: -Math.PI*.06,
+        spearMid:  -Math.PI*.03,
+        // Deep front lunge
+        lThigh:    Math.PI*.42,
+        lShin:     Math.PI*.68,
+        lFoot:     -Math.PI*.38,
+        lToe:      Math.PI*.12,
+        // Back leg fully extended
+        rThigh:    -Math.PI*.52,
+        rShin:     Math.PI*.04,
+        rFoot:     Math.PI*.35,
+        rToe:      -Math.PI*.10,
+      });
+      for(const k in J) J[k].speed=42;
+      // trunk lurches forward 18px
+      thrustLungeX=KN.worldX+18*KN.facing;
+    }
+  } else if(KN.phase===1){
+    lerpAllJoints(1);
+    // Lunge body forward
+    KN.worldX=lerp(KN.worldX,thrustLungeX,.22);
+    KN_LEAN=lerp(KN_LEAN,0.22,.15);KN_SQUAT=lerp(KN_SQUAT,-4,.15);
+    if(!thrustHit&&KN.phaseT>110){
+      thrustHit=true;
+      const tipX=J.spearTip.wx, tipY=J.spearTip.wy;
+      TFLASH={x:tipX,y:tipY,r:0,life:360,ml:360};
+      shk(12,260);
+      wave(tipX,tipY,85,'rgba(255,255,255,',380);
+      wave(tipX,tipY,55,'rgba(200,220,255,',240);
+      burst(tipX,tipY,38,3,13,400,3,['#fff','#ccf','#adf'],'rgba(255,255,255,.9)',0);
+    }
+    if(KN.phaseT>200){
+      KN.phase=2;KN.phaseT=0;
+      // Retract
+      setTargetAngles({
+        spineMid:-0.06,spineHigh:-0.08,
+        rClav:-Math.PI*.55,rUpper:-Math.PI*.50,
+        rLower:Math.PI*.68,rHand:-Math.PI*.15,
+        spearBase:Math.PI*.45,spearMid:Math.PI*.06,
+      });
+      for(const k in J) J[k].speed=11;
+    }
+  } else if(KN.phase===2){
+    lerpAllJoints(1);
+    KN.worldX=lerp(KN.worldX,dashSX||KN.worldX,.08);
+    KN_LEAN=lerp(KN_LEAN,0,.08);KN_SQUAT=lerp(KN_SQUAT,0,.08);
+    if(KN.phaseT>330){KN.phase=3;KN.phaseT=0;setIdleAngles();for(const k in J)J[k].speed=9;}
+  } else if(KN.phase===3){
+    lerpAllJoints(1);KN_LEAN=lerp(KN_LEAN,0,.08);KN_SQUAT=lerp(KN_SQUAT,0,.08);
+    if(KN.phaseT>440) KN.state='idle';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SKILL: METEOR
+// ═══════════════════════════════════════════════════════════════
+let meteorLX=0,meteorLY=0;
+function startMeteor(){
+  KN.state='meteor';KN.phase=0;KN.phaseT=0;KN.stateT=0;KN.facing=1;KN.visible=true;METEOR=null;
+  meteorLX=KN.worldX;meteorLY=GY;
+  // Phase 0: power squat — knees bend deep, arms raise overhead
+  setTargetAngles({
+    spineMid:  0.05,
+    spineHigh: 0.08,
+    neck:      -0.05,
+    // Arms throw up overhead to generate upward momentum
+    lClav:     -Math.PI*.15,
+    lUpper:    -Math.PI*.95,
+    lLower:    -Math.PI*.40,
+    lHand:     -Math.PI*.10,
+    rClav:     Math.PI*.15,
+    rUpper:    -Math.PI*.90,
+    rLower:    -Math.PI*.38,
+    rHand:     -Math.PI*.08,
+    spearBase: -Math.PI*.80,
+    spearMid:  -Math.PI*.15,
+    // DEEP squat
+    lThigh:    Math.PI*.55,
+    lShin:     Math.PI*1.12,
+    lFoot:     -Math.PI*.45,
+    lToe:      Math.PI*.15,
+    rThigh:    Math.PI*.58,
+    rShin:     Math.PI*1.15,
+    rFoot:     -Math.PI*.44,
+    rToe:      Math.PI*.14,
+  });
+  for(const k in J) J[k].speed=13;
+}
+function updateMeteor(){
+  if(KN.phase===0){
+    lerpAllJoints(1);
+    KN_SQUAT=lerp(KN_SQUAT,24,.12);KN_LEAN=0;
+    if(KN.phaseT>340){
+      KN.phase=1;KN.phaseT=0;
+      // BLAST OFF: legs extend and drive upward
+      setTargetAngles({
+        spineMid:  0,spineMid:0,spineHigh:0,neck:0,head:0,
+        lClav:     -Math.PI*.25,lUpper:-Math.PI*1.1,lLower:-Math.PI*.50,lHand:-Math.PI*.12,
+        rClav:     Math.PI*.25,rUpper:-Math.PI*1.05,rLower:-Math.PI*.48,rHand:-Math.PI*.10,
+        spearBase: -Math.PI*.95,spearMid:-Math.PI*.20,
+        // legs shoot straight down/back
+        lThigh:    -Math.PI*.55,lShin:Math.PI*.06,lFoot:Math.PI*.35,lToe:-Math.PI*.08,
+        rThigh:    -Math.PI*.52,rShin:Math.PI*.05,rFoot:Math.PI*.34,rToe:-Math.PI*.07,
+      });
+      for(const k in J) J[k].speed=36;
+    }
+  } else if(KN.phase===1){
+    lerpAllJoints(1);
+    const p=Math.min(1,KN.phaseT/360);
+    KN.worldY=GY-p*p*(H+220);
+    KN_SQUAT=lerp(KN_SQUAT,-8,.2);KN_LEAN=0;
+    if(KN.worldY<-150){
+      KN.visible=false;
+      KN.phase=2;KN.phaseT=0;
+      WARN={x:meteorLX,y:meteorLY,r:68,life:1080,ml:1080};
+      // Air tuck
+      setTargetAngles({
+        lThigh:-Math.PI*.28,lShin:Math.PI*.60,lFoot:Math.PI*.22,
+        rThigh:-Math.PI*.25,rShin:Math.PI*.58,rFoot:Math.PI*.20,
+        rUpper:-Math.PI*.85,rLower:-Math.PI*.45,spearBase:-Math.PI*.70,
+      });
+    }
+  } else if(KN.phase===2){
+    lerpAllJoints(1);
+    if(KN.phaseT>1000){
+      KN.phase=3;KN.phaseT=0;
+      METEOR={on:true,x:meteorLX,y:-100,vy:0};
+      setTargetAngles({
+        lThigh:-Math.PI*.32,lShin:Math.PI*.34,rThigh:-Math.PI*.30,rShin:Math.PI*.32,
+        rUpper:Math.PI*.65,rLower:Math.PI*.30,spearBase:Math.PI*.55,spearMid:Math.PI*.15,
+      });
+    }
+  } else if(KN.phase===3){
+    lerpAllJoints(1);
+    if(METEOR&&METEOR.on){
+      METEOR.vy+=.98*(dt/16);METEOR.y+=METEOR.vy*(dt/16);
+      if(Math.random()<.93){
+        for(let i=0;i<3;i++)P(METEOR.x+(Math.random()-.5)*20,METEOR.y+Math.random()*20,(Math.random()-.5)*4,Math.random()*4,380+Math.random()*310,4+Math.random()*9,Math.random()<.5?'#f40':'#fa0','rgba(255,100,0,.9)',0);
+        P(METEOR.x+(Math.random()-.5)*30,METEOR.y+Math.random()*30,(Math.random()-.5)*6,Math.random()*5,270,3+Math.random()*6,Math.random()<.3?'#fff':'#a0f','rgba(160,0,255,.8)',0);
+      }
+      if(METEOR.y>=meteorLY){
+        METEOR.on=false;
+        KN.visible=true;KN.worldX=meteorLX;KN.worldY=meteorLY;
+        shk(30,820);
+        CRACKS.push(...makeCracks(meteorLX,meteorLY,18));
+        wave(meteorLX,meteorLY,220,'rgba(255,120,0,',820);
+        wave(meteorLX,meteorLY,145,'rgba(255,255,200,',540);
+        wave(meteorLX,meteorLY,320,'rgba(255,60,0,',1050);
+        burst(meteorLX,meteorLY,110,4,20,950,4,['#f60','#fc0','#f22','#fff','#fa0'],'rgba(255,100,0,.9)',.12);
+        // Instant IMPACT pose
+        J.lThigh.angle=Math.PI*.62;J.lShin.angle=Math.PI*1.32;J.lFoot.angle=-Math.PI*.48;
+        J.rThigh.angle=Math.PI*.65;J.rShin.angle=Math.PI*1.35;J.rFoot.angle=-Math.PI*.46;
+        KN_SQUAT=32;KN_LEAN=0;
+        J.rUpper.angle=Math.PI*.92;J.rLower.angle=Math.PI*1.18;
+        J.lUpper.angle=Math.PI*.75;J.lLower.angle=Math.PI*.65;
+        J.spearBase.angle=Math.PI*.88;J.spearMid.angle=Math.PI*.30;
+        // Then slowly stand up
+        setIdleAngles();for(const k in J)J[k].speed=5;
+        hp=Math.max(5,hp-15);document.getElementById('hf').style.width=hp+'%';
+        KN.phase=4;KN.phaseT=0;
+      }
+    }
+  } else if(KN.phase===4){
+    lerpAllJoints(1);KN_SQUAT=lerp(KN_SQUAT,0,.04);KN_LEAN=lerp(KN_LEAN,0,.04);
+    if(KN.phaseT>1100){KN.state='idle';for(const k in J)J[k].speed=8;}
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SKILL: HEAL
+// ═══════════════════════════════════════════════════════════════
+function startHeal(){
+  KN.state='heal';KN.phase=0;KN.phaseT=0;KN.stateT=0;KN.facing=1;
+  // Spear arm raises straight up, shield draws to chest in prayer
+  setTargetAngles({
+    spineMid:  0.04,spineHigh:0.06,neck:-0.06,head:-0.04,
+    // Shield arm folds to chest
+    lClav:     Math.PI*.22,
+    lUpper:    Math.PI*.60,
+    lLower:    -Math.PI*.65,
+    lHand:     Math.PI*.18,
+    // Spear arm straight up
+    rClav:     Math.PI*.08,
+    rUpper:    -Math.PI*1.12,
+    rLower:    -Math.PI*.06,
+    rHand:     Math.PI*.04,
+    spearBase: -Math.PI*1.08,
+    spearMid:  -Math.PI*.04,
+    // Feet planted wide
+    lThigh:    Math.PI*.06,lShin:Math.PI*.08,lFoot:-Math.PI*.08,
+    rThigh:    -Math.PI*.06,rShin:Math.PI*.08,rFoot:Math.PI*.08,
+  });
+  for(const k in J) J[k].speed=10;
+}
+function updateHeal(){
+  if(KN.phase===0){
+    lerpAllJoints(1);KN_LEAN=lerp(KN_LEAN,0,.08);KN_SQUAT=lerp(KN_SQUAT,0,.08);
+    if(KN.phaseT>460){KN.phase=1;KN.phaseT=0;HEALMAGIC={on:true,life:3000,angle:0};}
+  } else if(KN.phase===1){
+    HEALMAGIC.life-=dt;HEALMAGIC.angle+=.028*(dt/16);
+    // Casting sway
+    J.spineMid.angle=lerp(J.spineMid.angle,IDLE_ANGLES.spineMid+Math.sin(T*1.8)*.06,.06);
+    J.rUpper.angle=lerp(J.rUpper.angle,-Math.PI*1.12+Math.sin(T*2.4)*.08,.06);
+    KN_SQUAT=-Math.abs(Math.sin(T*1.6))*3.5;
+    lerpAllJoints(0.5);
+    if(Math.random()<.58){
+      const a=Math.random()*Math.PI*2,r=56+Math.random()*52;
+      ORBS.push({x:KN.worldX+Math.cos(a)*r,y:KN.worldY-12+Math.sin(a)*r*.36,vx:(Math.random()-.5)*1.4,vy:-(1.1+Math.random()*2.3),life:1600+Math.random()*750,ml:2200,r:2+Math.random()*3.8});
+    }
+    if(KN.stateT%100<dt){hp=Math.min(100,hp+2);document.getElementById('hf').style.width=hp+'%';}
+    if(HEALMAGIC.life<=0){HEALMAGIC.on=false;KN.phase=2;KN.phaseT=0;setIdleAngles();for(const k in J)J[k].speed=9;}
+  } else if(KN.phase===2){
+    lerpAllJoints(1);KN_LEAN=lerp(KN_LEAN,0,.08);KN_SQUAT=lerp(KN_SQUAT,0,.08);
+    if(KN.phaseT>520) KN.state='idle';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATE ROUTER
+// ═══════════════════════════════════════════════════════════════
+function updateKnight(){
+  KN.phaseT+=dt;KN.stateT+=dt;
+  if(KN.state==='idle'){setIdleAngles();lerpAllJoints(1);updateIdle();}
+  else if(KN.state==='dash')  updateDash();
+  else if(KN.state==='sweep') updateSweep();
+  else if(KN.state==='thrust')updateThrust();
+  else if(KN.state==='meteor')updateMeteor();
+  else if(KN.state==='heal')  updateHeal();
+  updateKnightHip();
+  runFK();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BACKGROUND
+// ═══════════════════════════════════════════════════════════════
+const STARS=Array.from({length:95},()=>({x:Math.random(),y:Math.random()*.65,r:Math.random()*1.6+.3,tw:Math.random()*6.28,s:Math.random()*.8+.2}));
+const CLOUDS=Array.from({length:6},()=>({x:Math.random(),y:Math.random()*.4+.02,w:Math.random()*195+95,h:Math.random()*46+18,s:Math.random()*.00004+.00002,a:Math.random()*.18+.04}));
+function drawBG(){
+  const sg=g.createLinearGradient(0,0,0,GY);
+  sg.addColorStop(0,'#06000f');sg.addColorStop(.4,'#150830');sg.addColorStop(.75,'#2a0a3a');sg.addColorStop(1,'#3d1020');
+  g.fillStyle=sg;g.fillRect(0,0,W,GY);
+  const ng=g.createRadialGradient(W*.3,GY*.4,10,W*.3,GY*.4,W*.5);
+  ng.addColorStop(0,'rgba(80,0,120,.18)');ng.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=ng;g.fillRect(0,0,W,GY);
+  for(const c of CLOUDS){c.x+=c.s;if(c.x>1.3)c.x=-0.3;const cg=g.createRadialGradient(c.x*W,c.y*GY,0,c.x*W,c.y*GY,c.w/2);cg.addColorStop(0,`rgba(180,120,255,${c.a})`);cg.addColorStop(.5,`rgba(100,60,180,${c.a*.5})`);cg.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=cg;g.beginPath();g.ellipse(c.x*W,c.y*GY,c.w/2,c.h/2,0,0,Math.PI*2);g.fill();}
+  for(const s of STARS){s.tw+=s.s*.025;const a=.3+.7*Math.abs(Math.sin(s.tw));g.fillStyle=`rgba(255,240,220,${a})`;g.beginPath();g.arc(s.x*W,s.y*GY,s.r,0,Math.PI*2);g.fill();}
+}
 function drawGround(){
-    const y = groundY();
-
-    const g = ctx.createLinearGradient(0,y,0,H);
-
-    g.addColorStop(0,"#41352d");
-    g.addColorStop(0.2,"#2a231e");
-    g.addColorStop(1,"#0f0d0c");
-
-    ctx.fillStyle=g;
-    ctx.fillRect(0,y,W,H-y);
-
-    ctx.strokeStyle="rgba(255,255,255,0.04)";
-    ctx.lineWidth=2;
-
-    for(let x=0;x<W;x+=60){
-        ctx.beginPath();
-        ctx.moveTo(x,y);
-        ctx.lineTo(x+40,H);
-        ctx.stroke();
-    }
-
-    for(let yy=y;yy<H;yy+=38){
-        ctx.beginPath();
-        ctx.moveTo(0,yy);
-        ctx.lineTo(W,yy+10);
-        ctx.stroke();
-    }
-
-    ctx.fillStyle="rgba(255,255,255,0.05)";
-    ctx.fillRect(0,y-6,W,6);
-
-    ctx.fillStyle="rgba(0,0,0,0.35)";
-    ctx.fillRect(0,y+10,W,18);
+  const gg=g.createLinearGradient(0,GY,0,H);gg.addColorStop(0,'#1a0a06');gg.addColorStop(.3,'#220c08');gg.addColorStop(1,'#0e0503');
+  g.fillStyle=gg;g.fillRect(0,GY,W,H-GY);
+  const tw=44,th=20,cols=Math.ceil(W/tw)+2,rows=5;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const tx=(c-(r%2)*.5)*tw-tw,ty=GY+r*th,shade=.82+((c*7+r*13)%11)*.016;g.fillStyle=`rgb(${~~(52*shade)},${~~(26*shade)},${~~(11*shade)})`;g.fillRect(tx,ty,tw-1,th-1);g.strokeStyle='rgba(100,55,25,.45)';g.lineWidth=.8;g.strokeRect(tx,ty,tw-1,th-1);}
+  const eg=g.createLinearGradient(0,0,W,0);eg.addColorStop(0,'rgba(255,80,0,0)');eg.addColorStop(.5,'rgba(255,110,15,.85)');eg.addColorStop(1,'rgba(255,80,0,0)');
+  g.fillStyle=eg;g.fillRect(0,GY-2,W,4);
 }
 
-function drawCracks(){
-    cracks.forEach(c=>{
-        ctx.lineCap="round";
-
-        ctx.shadowBlur=20;
-        ctx.shadowColor="rgba(255,120,0,1)";
-
-        ctx.strokeStyle=`rgba(255,80,0,${c.life*0.9})`;
-        ctx.lineWidth=7;
-
-        ctx.beginPath();
-        ctx.moveTo(c.x,c.y);
-
-        c.segs.forEach(s=>{
-            ctx.lineTo(s.x,s.y);
-        });
-
-        ctx.stroke();
-
-        ctx.shadowBlur=0;
-
-        ctx.strokeStyle=`rgba(20,10,10,${c.life})`;
-        ctx.lineWidth=3;
-
-        ctx.beginPath();
-        ctx.moveTo(c.x,c.y);
-
-        c.segs.forEach(s=>{
-            ctx.lineTo(s.x,s.y);
-        });
-
-        ctx.stroke();
-    });
-}
-
-function drawParticles(){
-    particles.forEach(p=>{
-        ctx.globalAlpha = p.alpha*(p.life/p.max);
-
-        ctx.shadowBlur = p.glow;
-        ctx.shadowColor = p.color;
-
-        ctx.fillStyle = p.color;
-
-        ctx.beginPath();
-
-        if(p.type==="circle"){
-            ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
-        }else{
-            ctx.rect(p.x,p.y,p.size,p.size);
-        }
-
-        ctx.fill();
-
-        ctx.globalAlpha=1;
-        ctx.shadowBlur=0;
-    });
-}
-
-function drawSlashArcs(){
-    slashArcs.forEach(a=>{
-        ctx.save();
-
-        const alpha = a.life/0.6;
-
-        ctx.strokeStyle=`rgba(255,220,100,${alpha})`;
-        ctx.lineWidth=26;
-
-        ctx.shadowBlur=30;
-        ctx.shadowColor="rgba(255,220,120,1)";
-
-        ctx.beginPath();
-        ctx.arc(a.x,a.y,a.r,a.start,a.end);
-        ctx.stroke();
-
-        ctx.strokeStyle=`rgba(255,255,255,${alpha*0.8})`;
-        ctx.lineWidth=5;
-
-        ctx.beginPath();
-        ctx.arc(a.x,a.y,a.r,a.start,a.end);
-        ctx.stroke();
-
-        ctx.restore();
-    });
-}
-
-function drawShockwaves(){
-    shockwaves.forEach(s=>{
-        ctx.save();
-
-        ctx.strokeStyle=`rgba(255,255,255,${s.life*2})`;
-        ctx.lineWidth=6;
-        ctx.shadowBlur=18;
-        ctx.shadowColor="white";
-
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-        ctx.stroke();
-
-        ctx.restore();
-    });
-}
-
-function drawAfterImages(){
-    afterImages.forEach(a=>{
-        ctx.save();
-        ctx.globalAlpha = a.alpha*0.45;
-
-        drawKnightBody(a.x,a.y,true);
-
-        ctx.restore();
-    });
-}
-
+// ═══════════════════════════════════════════════════════════════
+// KNIGHT RENDERER — draws each bone segment using FK world positions
+// ═══════════════════════════════════════════════════════════════
 function drawKnight(){
-    drawKnightBody(knight.x,knight.y,false);
+  const px=J.pelvis.wx, py=J.pelvis.wy;
+  // Ground shadow
+  const sg2=g.createRadialGradient(KN.worldX,KN.worldY,2,KN.worldX,KN.worldY,52);
+  sg2.addColorStop(0,'rgba(0,0,0,.56)');sg2.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=sg2;g.beginPath();g.ellipse(KN.worldX,KN.worldY,52,11,0,0,Math.PI*2);g.fill();
+
+  // Draw order: back leg → back arm → torso → front arm → front leg → head/helmet
+  // (facing=1: left=back, right=front for legs; reversed for arms since shield is left)
+  if(KN.facing===1){
+    drawLeg(J.lHip,J.lThigh,J.lShin,J.lFoot,J.lToe,'back');
+    drawUpperArm(J.rClav,J.rUpper,J.rLower,J.rHand,'spear');
+    drawTorso();
+    drawShieldArm(J.lClav,J.lUpper,J.lLower,J.lHand);
+    drawLeg(J.rHip,J.rThigh,J.rShin,J.rFoot,J.rToe,'front');
+  } else {
+    drawLeg(J.rHip,J.rThigh,J.rShin,J.rFoot,J.rToe,'back');
+    drawUpperArm(J.lClav,J.lUpper,J.lLower,J.lHand,'spear');
+    drawTorso();
+    drawShieldArm(J.rClav,J.rUpper,J.rLower,J.rHand);
+    drawLeg(J.lHip,J.lThigh,J.lShin,J.lFoot,J.lToe,'front');
+  }
+  drawHelmet();
 }
 
-function drawKnightBody(x,y,isGhost){
-
-    const breathe = Math.sin(knight.breathing)*0.03;
-
-    ctx.save();
-
-    ctx.translate(x,y);
-
-    if(isGhost){
-        ctx.shadowBlur=30;
-        ctx.shadowColor="rgba(100,180,255,1)";
-        ctx.globalCompositeOperation="lighter";
-    }
-
-    const bodyTilt =
-        knight.state==="dash" ? 0.22 :
-        knight.state==="meteorFall" ? 0 :
-        breathe;
-
-    ctx.rotate(bodyTilt);
-
-    const armorDark = isGhost ? "rgba(100,180,255,0.4)" : "#2d313f";
-    const armorMid = isGhost ? "rgba(160,220,255,0.5)" : "#50586d";
-    const armorLight = isGhost ? "rgba(220,255,255,0.7)" : "#8d99b3";
-
-    function metalRect(x,y,w,h,r,c1,c2){
-        const g = ctx.createLinearGradient(x,y,x+w,y+h);
-        g.addColorStop(0,c1);
-        g.addColorStop(1,c2);
-
-        ctx.fillStyle=g;
-
-        ctx.beginPath();
-        ctx.roundRect(x,y,w,h,r);
-        ctx.fill();
-    }
-
-    function limb(px,py,len,w,rot,c1,c2){
-        ctx.save();
-        ctx.translate(px,py);
-        ctx.rotate(rot);
-
-        metalRect(-w/2,0,w,len,w/2,c1,c2);
-
-        ctx.restore();
-    }
-
-    const armSwing = Math.sin(time*2.2)*0.05;
-
-    limb(-32,35,80,24,0.1+armSwing,armorMid,armorDark);
-    limb(40,35,85,24,-0.12-armSwing,armorMid,armorDark);
-
-    limb(-18,135,90,28,-0.04,armorMid,armorDark);
-    limb(22,135,90,28,0.04,armorMid,armorDark);
-
-    metalRect(-60,0,120,115,24,armorMid,armorDark);
-
-    ctx.fillStyle=armorLight;
-    ctx.fillRect(-10,12,20,70);
-
-    ctx.fillStyle="rgba(255,255,255,0.1)";
-    ctx.fillRect(-48,8,96,8);
-
-    metalRect(-80,5,42,45,18,armorLight,armorDark);
-    metalRect(38,5,42,45,18,armorLight,armorDark);
-
-    ctx.fillStyle="#611";
-    for(let i=0;i<6;i++){
-        ctx.fillRect(-40+i*12,115,7,48+Math.sin(time*5+i)*3);
-    }
-
-    metalRect(-40,-72,80,70,22,armorMid,armorDark);
-
-    ctx.fillStyle="#8b0000";
-
-    for(let i=0;i<7;i++){
-        ctx.beginPath();
-        ctx.moveTo(0,-82);
-        ctx.lineTo(-18+i*6,-120-rand(0,5));
-        ctx.lineTo(-6+i*6,-84);
-        ctx.fill();
-    }
-
-    ctx.fillStyle=armorLight;
-
-    ctx.beginPath();
-    ctx.moveTo(-30,-40);
-    ctx.lineTo(0,-70);
-    ctx.lineTo(30,-40);
-    ctx.lineTo(26,-5);
-    ctx.lineTo(-26,-5);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle="#111";
-    ctx.fillRect(-7,-54,14,42);
-
-    const eyeGlow = 0.5 + Math.sin(time*8)*0.5;
-
-    ctx.fillStyle=`rgba(255,0,0,${eyeGlow})`;
-    ctx.shadowBlur=20;
-    ctx.shadowColor="red";
-
-    ctx.fillRect(-4,-42,8,16);
-
-    ctx.shadowBlur=0;
-
-    ctx.save();
-
-    ctx.translate(-80,45);
-
-    const shieldRot =
-        knight.state==="dash" ? -0.5 :
-        -0.15;
-
-    ctx.rotate(shieldRot);
-
-    metalRect(-15,-55,95,110,14,armorLight,armorDark);
-
-    ctx.strokeStyle="#cba64a";
-    ctx.lineWidth=6;
-    ctx.strokeRect(-12,-52,89,104);
-
-    ctx.strokeStyle="rgba(255,255,255,0.25)";
-    ctx.lineWidth=3;
-
-    ctx.beginPath();
-    ctx.moveTo(32,-40);
-    ctx.lineTo(32,40);
-    ctx.moveTo(-2,0);
-    ctx.lineTo(65,0);
-    ctx.stroke();
-
-    ctx.restore();
-
-    ctx.save();
-
-    ctx.translate(80,40);
-
-    let spearRot = 0.1;
-
-    if(knight.state==="sweepCharge"){
-        spearRot = -1.5;
-    }
-
-    if(knight.state==="sweep"){
-        spearRot = knight.sweepAngle;
-    }
-
-    if(knight.state==="thrust"){
-        spearRot = 0;
-    }
-
-    if(knight.state==="heal"){
-        spearRot = -1.5;
-    }
-
-    ctx.rotate(spearRot);
-
-    const spearLen = 180 * knight.spearExtend;
-
-    const shaftG = ctx.createLinearGradient(0,0,spearLen,0);
-    shaftG.addColorStop(0,"#6f6f75");
-    shaftG.addColorStop(1,"#3d3d44");
-
-    ctx.fillStyle=shaftG;
-    ctx.fillRect(0,-5,spearLen,10);
-
-    ctx.fillStyle="#d9dce4";
-
-    ctx.beginPath();
-    ctx.moveTo(spearLen,-18);
-    ctx.lineTo(spearLen+40,0);
-    ctx.lineTo(spearLen,18);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle="#d7b550";
-    ctx.fillRect(35,-10,14,20);
-
-    ctx.restore();
-
-    if(knight.state==="heal"){
-        const cx=0;
-        const cy=190;
-
-        ctx.save();
-
-        ctx.translate(cx,cy);
-
-        ctx.rotate(time*1.4);
-
-        const ring = ctx.createRadialGradient(0,0,20,0,0,140);
-        ring.addColorStop(0,"rgba(80,255,160,0.1)");
-        ring.addColorStop(1,"rgba(0,0,0,0)");
-
-        ctx.fillStyle=ring;
-        ctx.beginPath();
-        ctx.arc(0,0,150,0,Math.PI*2);
-        ctx.fill();
-
-        ctx.strokeStyle="rgba(80,255,160,0.9)";
-        ctx.lineWidth=4;
-        ctx.shadowBlur=20;
-        ctx.shadowColor="rgba(80,255,160,1)";
-
-        for(let i=0;i<3;i++){
-            ctx.beginPath();
-            ctx.arc(0,0,70+i*24,0,Math.PI*2);
-            ctx.stroke();
-        }
-
-        for(let i=0;i<12;i++){
-            let ang = (Math.PI*2/12)*i;
-
-            ctx.beginPath();
-            ctx.moveTo(Math.cos(ang)*50,Math.sin(ang)*50);
-            ctx.lineTo(Math.cos(ang)*130,Math.sin(ang)*130);
-            ctx.stroke();
-        }
-
-        healRunes.forEach(r=>{
-            ctx.save();
-
-            ctx.rotate(r.rot+r.ang);
-
-            ctx.strokeStyle=`rgba(120,255,180,${r.life/2})`;
-
-            ctx.beginPath();
-            ctx.rect(r.r,-10,20,20);
-            ctx.stroke();
-
-            ctx.restore();
-        });
-
-        ctx.restore();
-    }
-
-    if(knight.hpGlow>0){
-        ctx.fillStyle=`rgba(80,255,160,${knight.hpGlow*0.2})`;
-        ctx.beginPath();
-        ctx.arc(0,40,180,0,Math.PI*2);
-        ctx.fill();
-    }
-
-    ctx.restore();
+// ─── SEGMENT DRAWING HELPERS ─────────────────────────────────
+// Draw a limb segment from joint A to joint B as a rounded trapezoid
+function drawSegment(ax,ay,bx,by,wA,wB,fillGrad,strokeCol,strokeW){
+  const dx=bx-ax,dy=by-ay;
+  const len=Math.sqrt(dx*dx+dy*dy)||1;
+  const nx=dy/len,ny=-dx/len; // normal
+  g.beginPath();
+  g.moveTo(ax+nx*wA,ay+ny*wA);
+  g.lineTo(bx+nx*wB,by+ny*wB);
+  g.lineTo(bx-nx*wB,by-ny*wB);
+  g.lineTo(ax-nx*wA,ay-ny*wA);
+  g.closePath();
+  g.fillStyle=fillGrad;g.fill();
+  g.strokeStyle=strokeCol||'#1a1a1a';g.lineWidth=strokeW||1.8;g.stroke();
+}
+function segGrad(ax,ay,bx,by,c0,c1){
+  const grd=g.createLinearGradient(ax,ay,bx,by);grd.addColorStop(0,c0);grd.addColorStop(1,c1);return grd;
+}
+function sideGrad(ax,ay,bx,by,wA){
+  // gradient perpendicular to segment for 3D look
+  const dx=bx-ax,dy=by-ay,len=Math.sqrt(dx*dx+dy*dy)||1;
+  const nx=dy/len,ny=-dx/len;
+  const mx=(ax+bx)/2,my=(ay+by)/2;
+  const grd=g.createLinearGradient(mx-nx*wA,my-ny*wA,mx+nx*wA,my+ny*wA);
+  grd.addColorStop(0,'#282828');grd.addColorStop(.35,'#888');grd.addColorStop(.65,'#6a6a6a');grd.addColorStop(1,'#1e1e1e');
+  return grd;
 }
 
-function drawMeteorMarker(){
-    if(knight.state==="meteorWait"){
-        const x = knight.meteorTargetX;
-        const y = groundY();
+// ─── LEG ─────────────────────────────────────────────────────
+function drawLeg(jHip,jThigh,jShin,jFoot,jToe,layer){
+  const isBack=layer==='back';
+  const dimmer=isBack?.72:1;
+  // THIGH
+  const tg=g.createLinearGradient(jHip.wx,jHip.wy,jThigh.wx,jThigh.wy);
+  tg.addColorStop(0,`rgba(${~~(62*dimmer)},${~~(62*dimmer)},${~~(62*dimmer)},1)`);
+  tg.addColorStop(.4,`rgba(${~~(128*dimmer)},${~~(128*dimmer)},${~~(128*dimmer)},1)`);
+  tg.addColorStop(1,`rgba(${~~(38*dimmer)},${~~(38*dimmer)},${~~(38*dimmer)},1)`);
+  drawSegment(jHip.wx,jHip.wy,jThigh.wx,jThigh.wy,11,9,
+    sideGrad(jHip.wx,jHip.wy,jThigh.wx,jThigh.wy,12),`rgba(22,22,22,${dimmer})`,2);
+  // highlight ridge
+  g.strokeStyle=`rgba(255,255,255,${.13*dimmer})`;g.lineWidth=1.8;
+  const tmx=(jHip.wx+jThigh.wx)/2,tmy=(jHip.wy+jThigh.wy)/2;
+  const tdx=jThigh.wx-jHip.wx,tdy=jThigh.wy-jHip.wy,tlen=Math.sqrt(tdx*tdx+tdy*tdy)||1;
+  g.beginPath();g.moveTo(jHip.wx-tdy/tlen*3,jHip.wy+tdx/tlen*3);g.lineTo(jThigh.wx-tdy/tlen*2,jThigh.wy+tdx/tlen*2);g.stroke();
+  // gold top trim
+  g.strokeStyle=`rgba(200,160,32,${.7*dimmer})`;g.lineWidth=2.2;
+  g.beginPath();
+  const tnx=tdy/tlen,tny=-tdx/tlen;
+  g.moveTo(jHip.wx+tnx*9,jHip.wy+tny*9);g.lineTo(jHip.wx-tnx*9,jHip.wy-tny*9);g.stroke();
 
-        ctx.save();
+  // KNEE CAP
+  g.fillStyle=`rgba(${~~(200*dimmer)},${~~(160*dimmer)},${~~(32*dimmer)},1)`;
+  g.beginPath();g.arc(jThigh.wx,jThigh.wy,9*dimmer+3,0,Math.PI*2);g.fill();
+  g.fillStyle=`rgba(28,28,28,${dimmer})`;g.beginPath();g.arc(jThigh.wx,jThigh.wy,5.5,0,Math.PI*2);g.fill();
+  g.fillStyle=`rgba(255,210,80,${.38*dimmer})`;g.beginPath();g.arc(jThigh.wx-1.5,jThigh.wy-2,2.5,0,Math.PI*2);g.fill();
 
-        const pulse = 1 + Math.sin(time*18)*0.2;
+  // SHIN
+  drawSegment(jThigh.wx,jThigh.wy,jShin.wx,jShin.wy,9,7,
+    sideGrad(jThigh.wx,jThigh.wy,jShin.wx,jShin.wy,10),`rgba(22,22,22,${dimmer})`,1.8);
+  // shin guard
+  const sdx=jShin.wx-jThigh.wx,sdy=jShin.wy-jThigh.wy,slen=Math.sqrt(sdx*sdx+sdy*sdy)||1;
+  g.strokeStyle=`rgba(255,255,255,${.10*dimmer})`;g.lineWidth=1.5;
+  g.beginPath();g.moveTo(jThigh.wx+sdx/slen*6,jThigh.wy+sdy/slen*6);g.lineTo(jShin.wx-sdx/slen*5,jShin.wy-sdy/slen*5);g.stroke();
+  g.strokeStyle=`rgba(200,160,32,${.55*dimmer})`;g.lineWidth=1.5;
+  g.beginPath();g.moveTo(jThigh.wx+sdx/slen*6-sdy/slen*9,jThigh.wy+sdy/slen*6+sdx/slen*9);g.lineTo(jThigh.wx+sdx/slen*6+sdy/slen*9,jThigh.wy+sdy/slen*6-sdx/slen*9);g.stroke();
 
-        ctx.strokeStyle=`rgba(255,40,40,${0.7+Math.sin(time*25)*0.3})`;
-        ctx.lineWidth=5;
-        ctx.shadowBlur=25;
-        ctx.shadowColor="red";
+  // BOOT
+  const fdx=jFoot.wx-jShin.wx,fdy=jFoot.wy-jShin.wy,flen=Math.sqrt(fdx*fdx+fdy*fdy)||1;
+  const fnx=fdy/flen,fny=-fdx/flen;
+  // boot upper
+  drawSegment(jShin.wx,jShin.wy,jFoot.wx,jFoot.wy,8,10,
+    sideGrad(jShin.wx,jShin.wy,jFoot.wx,jFoot.wy,11),`rgba(20,20,20,${dimmer})`,1.8);
+  // boot sole / toe box
+  g.fillStyle=`rgba(${~~(28*dimmer)},${~~(28*dimmer)},${~~(28*dimmer)},1)`;
+  g.beginPath();
+  g.ellipse(jFoot.wx+fdx/flen*9,jFoot.wy+fdy/flen*9,13,6,.0+Math.atan2(fdy,fdx),0,Math.PI*2);
+  g.fill();g.strokeStyle=`rgba(60,60,60,${dimmer})`;g.lineWidth=1.5;g.stroke();
+  // boot gold trim
+  g.strokeStyle=`rgba(200,160,32,${.72*dimmer})`;g.lineWidth=2.4;
+  g.beginPath();g.moveTo(jShin.wx+fnx*10,jShin.wy+fny*10);g.lineTo(jShin.wx-fnx*10,jShin.wy-fny*10);g.stroke();
+}
 
-        ctx.beginPath();
-        ctx.arc(x,y,85*pulse,0,Math.PI*2);
-        ctx.stroke();
+// ─── TORSO ───────────────────────────────────────────────────
+function drawTorso(){
+  // ── KILT / WAR SKIRT (hip to just below belt) ──
+  const pWx=J.pelvis.wx,pWy=J.pelvis.wy;
+  const sWx=J.spineLow.wx,sWy=J.spineLow.wy;
+  // Direction from pelvis upward
+  const kdx=sWx-pWx,kdy=sWy-pWy,klen=Math.sqrt(kdx*kdx+kdy*kdy)||1;
+  const knx=kdy/klen,kny=-kdx/klen;
+  const stripW=28;
+  for(let i=0;i<10;i++){
+    const t=i/9-.5;
+    const ox=knx*t*stripW*2,oy=kny*t*stripW*2;
+    const col=i%2===0?'#3e1b00':'#2d1200';
+    // strip hangs from belt line downward
+    const beltX=pWx+ox,beltY=pWy+oy;
+    const dangle=26+Math.sin(T*1.2+i*.8)*2;
+    g.fillStyle=col;
+    g.beginPath();
+    g.moveTo(beltX-knx*4,beltY-kny*4);
+    g.lineTo(beltX+knx*4,beltY+kny*4);
+    g.lineTo(beltX+knx*3+kdx/klen*dangle,beltY+kny*3+kdy/klen*dangle);
+    g.lineTo(beltX-knx*3+kdx/klen*dangle,beltY-kny*3+kdy/klen*dangle);
+    g.closePath();g.fill();
+    g.strokeStyle='#6a3a00';g.lineWidth=.85;g.stroke();
+    g.fillStyle='#c8a020';g.beginPath();g.arc(beltX+kdx/klen*5,beltY+kdy/klen*5,2.2,0,Math.PI*2);g.fill();
+  }
 
-        ctx.beginPath();
-        ctx.arc(x,y,40*pulse,0,Math.PI*2);
-        ctx.stroke();
+  // ── BELT ──
+  const beltMx=(pWx+sWx)*.5,beltMy=(pWy+sWy)*.5;
+  const beltAngle=Math.atan2(kdy,kdx)+Math.PI/2;
+  g.save();g.translate(beltMx,beltMy);g.rotate(beltAngle);
+  const bgg=g.createLinearGradient(-26,-7,26,7);
+  bgg.addColorStop(0,'#1a0800');bgg.addColorStop(.5,'#2e1400');bgg.addColorStop(1,'#1a0800');
+  g.fillStyle=bgg;rr(-26,-7,52,14,4);g.fill();
+  g.strokeStyle='#c8a020';g.lineWidth=2.6;g.stroke();
+  g.fillStyle='#c8a020';g.fillRect(-9,-6,18,12);
+  g.fillStyle='#000';g.fillRect(-6,-4,12,8);
+  g.fillStyle='#c8a020';g.beginPath();g.arc(0,0,3.5,0,Math.PI*2);g.fill();
+  g.restore();
 
-        ctx.beginPath();
-        ctx.moveTo(x-100,y);
-        ctx.lineTo(x+100,y);
+  // ── SPINE segments: low → mid → high ──
+  // spine low
+  const sLWx=J.spineLow.wx,sLWy=J.spineLow.wy;
+  const sMWx=J.spineMid.wx,sMWy=J.spineMid.wy;
+  const sHWx=J.spineHigh.wx,sHWy=J.spineHigh.wy;
 
-        ctx.moveTo(x,y-100);
-        ctx.lineTo(x,y+100);
-        ctx.stroke();
+  // Lower abdomen plate
+  drawSegment(pWx,pWy,sLWx,sLWy,17,18,
+    sideGrad(pWx,pWy,sLWx,sLWy,20),'#181818',2.5);
+  // Mid torso plate
+  drawSegment(sLWx,sLWy,sMWx,sMWy,18,19,
+    sideGrad(sLWx,sLWy,sMWx,sMWy,21),'#181818',2.5);
+  // Upper chest
+  drawSegment(sMWx,sMWy,sHWx,sHWy,19,18,
+    sideGrad(sMWx,sMWy,sHWx,sHWy,22),'#181818',2.5);
 
-        ctx.restore();
+  // ── BREASTPLATE OVERLAY ──
+  // The breastplate spans from spineLow to spineHigh
+  const chestAngle=Math.atan2(sHWy-sLWy,sHWx-sLWx)+Math.PI/2;
+  const chestCX=(sLWx+sHWx)*.5,chestCY=(sLWy+sHWy)*.5;
+  const chestLen=Math.sqrt((sHWx-sLWx)**2+(sHWy-sLWy)**2);
+  g.save();g.translate(chestCX,chestCY);g.rotate(chestAngle);
+  const cpg=g.createLinearGradient(-30,-chestLen/2,30,chestLen/2);
+  cpg.addColorStop(0,'#525252');cpg.addColorStop(.28,'#989898');cpg.addColorStop(.65,'#5e5e5e');cpg.addColorStop(1,'#2e2e2e');
+  // Chest shape — wider at top
+  g.beginPath();
+  g.moveTo(-32,-chestLen/2+2);
+  g.bezierCurveTo(-34,-chestLen/2+8,-34,chestLen/2-8,-30,chestLen/2);
+  g.lineTo(30,chestLen/2);
+  g.bezierCurveTo(34,chestLen/2-8,34,-chestLen/2+8,32,-chestLen/2+2);
+  g.closePath();
+  g.fillStyle=cpg;g.fill();g.strokeStyle='#181818';g.lineWidth=2.8;g.stroke();
+  // inner panel grooves
+  g.strokeStyle='rgba(255,255,255,.14)';g.lineWidth=1.8;
+  g.beginPath();g.moveTo(0,-chestLen/2+6);g.lineTo(0,chestLen/2-6);g.stroke();
+  g.beginPath();g.moveTo(-16,-chestLen/2+14);g.bezierCurveTo(-22,-chestLen/2+24,-22,chestLen/2-14,-16,chestLen/2-8);g.stroke();
+  g.beginPath();g.moveTo(16,-chestLen/2+14);g.bezierCurveTo(22,-chestLen/2+24,22,chestLen/2-14,16,chestLen/2-8);g.stroke();
+  g.strokeStyle='#c8a020';g.lineWidth=3;
+  g.beginPath();
+  g.moveTo(-32,-chestLen/2+2);g.bezierCurveTo(-34,-chestLen/2+8,-34,chestLen/2-8,-30,chestLen/2);
+  g.lineTo(30,chestLen/2);g.bezierCurveTo(34,chestLen/2-8,34,-chestLen/2+8,32,-chestLen/2+2);g.closePath();g.stroke();
+  // Cross emblem
+  const cy2=0;
+  g.strokeStyle='rgba(200,160,32,.88)';g.lineWidth=3.5;
+  g.beginPath();g.moveTo(0,-chestLen/2+14);g.lineTo(0,chestLen/2-10);g.stroke();
+  g.beginPath();g.moveTo(-17,cy2);g.lineTo(17,cy2);g.stroke();
+  // Chest gem
+  const gemG=g.createRadialGradient(0,cy2,0,0,cy2,8);
+  gemG.addColorStop(0,'#fff');gemG.addColorStop(.4,'#f44');gemG.addColorStop(1,'rgba(140,0,0,0)');
+  g.fillStyle=gemG;g.shadowBlur=20;g.shadowColor='#f44';
+  g.beginPath();g.arc(0,cy2,8,0,Math.PI*2);g.fill();g.shadowBlur=0;
+  // Ab detail plates
+  for(let row=0;row<4;row++){const ry=-chestLen/2+18+row*12;for(const sx of[-12,12]){g.fillStyle='rgba(255,255,255,.06)';rr(sx-7,ry,14,10,2);g.fill();g.strokeStyle='rgba(200,160,32,.3)';g.lineWidth=.9;g.stroke();}}
+  g.restore();
+
+  // ── PAULDRONS ──
+  // Attached at spineHigh, offset left and right
+  const shAngle=Math.atan2(sHWy-sMWy,sHWx-sMWx);
+  const pnx=Math.cos(shAngle+Math.PI/2),pny=Math.sin(shAngle+Math.PI/2);
+  for(const side of[-1,1]){
+    const pCX=sHWx+pnx*side*-34,pCY=sHWy+pny*side*-34;
+    g.save();g.translate(pCX,pCY);g.rotate(chestAngle);
+    const pg=g.createLinearGradient(-20,-14,20,14);
+    pg.addColorStop(0,'#5e5e5e');pg.addColorStop(.5,'#9e9e9e');pg.addColorStop(1,'#1e1e1e');
+    // Main pauldron dome
+    g.fillStyle=pg;g.beginPath();g.ellipse(0,0,22,16,0,0,Math.PI*2);g.fill();
+    g.strokeStyle='#c8a020';g.lineWidth=2.5;g.stroke();
+    // Layered sub-plates (3 plates hanging down)
+    for(let p=0;p<4;p++){
+      const pyy=10+p*11;
+      const pg2=g.createLinearGradient(-18+p*1.5,pyy,18-p*1.5,pyy+9);
+      pg2.addColorStop(0,'#525252');pg2.addColorStop(1,'#1e1e1e');
+      g.fillStyle=pg2;g.beginPath();
+      g.ellipse(0,pyy,18-p*2,6.5-p*.5,0,0,Math.PI*2);g.fill();
+      g.strokeStyle='#888';g.lineWidth=1;g.stroke();
+      // gold seam line
+      g.strokeStyle=`rgba(200,160,32,.5)`;g.lineWidth=1;
+      g.beginPath();g.moveTo(-(18-p*2),pyy);g.lineTo(18-p*2,pyy);g.stroke();
     }
+    // Pauldron spike
+    g.fillStyle='#b0b0b0';g.beginPath();
+    g.moveTo(-4,-14);g.lineTo(0,-30);g.lineTo(4,-14);g.closePath();g.fill();
+    g.fillStyle='#c8a020';g.beginPath();g.arc(0,-30,4,0,Math.PI*2);g.fill();
+    g.shadowBlur=10;g.shadowColor='rgba(200,160,32,.65)';
+    g.fillStyle='rgba(255,230,80,.35)';g.beginPath();g.arc(0,-30,2.5,0,Math.PI*2);g.fill();
+    g.shadowBlur=0;
+    g.restore();
+  }
 }
 
-function render(){
-
-    ctx.clearRect(0,0,W,H);
-
-    const sx = rand(-screenShake,screenShake);
-    const sy = rand(-screenShake,screenShake);
-
-    ctx.save();
-    ctx.translate(sx,sy);
-
-    drawBackground();
-
-    drawGround();
-
-    drawCracks();
-
-    drawAfterImages();
-
-    drawSlashArcs();
-
-    drawShockwaves();
-
-    drawMeteorMarker();
-
-    drawKnight();
-
-    drawParticles();
-
-    ctx.restore();
+// ─── SHIELD ARM ───────────────────────────────────────────────
+function drawShieldArm(jClav,jUpper,jLower,jHand){
+  // clavicle (not drawn, just pivot)
+  // upper arm
+  drawSegment(jClav.wx,jClav.wy,jUpper.wx,jUpper.wy,10,9,
+    sideGrad(jClav.wx,jClav.wy,jUpper.wx,jUpper.wy,11),'#1c1c1c',2);
+  // elbow guard
+  g.fillStyle='#c8a020';g.beginPath();g.arc(jUpper.wx,jUpper.wy,9,0,Math.PI*2);g.fill();
+  g.fillStyle='#222';g.beginPath();g.arc(jUpper.wx,jUpper.wy,5,0,Math.PI*2);g.fill();
+  g.fillStyle='rgba(255,210,60,.4)';g.beginPath();g.arc(jUpper.wx-2,jUpper.wy-2,2.5,0,Math.PI*2);g.fill();
+  // forearm
+  drawSegment(jUpper.wx,jUpper.wy,jLower.wx,jLower.wy,9,8,
+    sideGrad(jUpper.wx,jUpper.wy,jLower.wx,jLower.wy,10),'#1c1c1c',1.8);
+  // wrist guard
+  drawSegment(jLower.wx,jLower.wy,jHand.wx,jHand.wy,8,9,
+    sideGrad(jLower.wx,jLower.wy,jHand.wx,jHand.wy,10),'#1c1c1c',1.8);
+  // gauntlet
+  const gdx=jHand.wx-jLower.wx,gdy=jHand.wy-jLower.wy,glen=Math.sqrt(gdx*gdx+gdy*gdy)||1;
+  const ghx=jHand.wx+gdx/glen*10,ghy=jHand.wy+gdy/glen*10;
+  g.save();g.translate(ghx,ghy);g.rotate(Math.atan2(gdy,gdx));
+  g.fillStyle='#1e1e1e';rr(-10,-9,20,18,5);g.fill();g.strokeStyle='#4a4a4a';g.lineWidth=2;g.stroke();
+  g.strokeStyle='#c8a020';g.lineWidth=1.5;g.beginPath();g.moveTo(-10,2);g.lineTo(10,2);g.stroke();g.restore();
+  // SHIELD
+  drawShield(jHand.wx,jHand.wy,jHand.wa);
 }
 
-function loop(t){
-
-    const dt = Math.min((t-last)/1000,0.033);
-    last=t;
-
-    update(dt);
-
-    render();
-
-    requestAnimationFrame(loop);
+// ─── SPEAR ARM ────────────────────────────────────────────────
+function drawUpperArm(jClav,jUpper,jLower,jHand,_){
+  // upper arm
+  drawSegment(jClav.wx,jClav.wy,jUpper.wx,jUpper.wy,10,9,
+    sideGrad(jClav.wx,jClav.wy,jUpper.wx,jUpper.wy,11),'#1c1c1c',2);
+  g.fillStyle='#c8a020';g.beginPath();g.arc(jUpper.wx,jUpper.wy,9,0,Math.PI*2);g.fill();
+  g.fillStyle='#222';g.beginPath();g.arc(jUpper.wx,jUpper.wy,5,0,Math.PI*2);g.fill();
+  g.fillStyle='rgba(255,210,60,.4)';g.beginPath();g.arc(jUpper.wx-2,jUpper.wy-2,2.5,0,Math.PI*2);g.fill();
+  drawSegment(jUpper.wx,jUpper.wy,jLower.wx,jLower.wy,9,8,
+    sideGrad(jUpper.wx,jUpper.wy,jLower.wx,jLower.wy,10),'#1c1c1c',1.8);
+  drawSegment(jLower.wx,jLower.wy,jHand.wx,jHand.wy,8,9,
+    sideGrad(jLower.wx,jLower.wy,jHand.wx,jHand.wy,10),'#1c1c1c',1.8);
+  const gdx=jHand.wx-jLower.wx,gdy=jHand.wy-jLower.wy,glen=Math.sqrt(gdx*gdx+gdy*gdy)||1;
+  const ghx=jHand.wx+gdx/glen*10,ghy=jHand.wy+gdy/glen*10;
+  g.save();g.translate(ghx,ghy);g.rotate(Math.atan2(gdy,gdx));
+  g.fillStyle='#1e1e1e';rr(-10,-9,20,18,5);g.fill();g.strokeStyle='#4a4a4a';g.lineWidth=2;g.stroke();
+  g.strokeStyle='#c8a020';g.lineWidth=1.5;g.beginPath();g.moveTo(-10,2);g.lineTo(10,2);g.stroke();g.restore();
+  // SPEAR
+  drawSpear();
 }
 
+// ─── SHIELD ───────────────────────────────────────────────────
+function drawShield(hx,hy,angle){
+  g.save();g.translate(hx,hy);g.rotate(angle);
+  // Shield is 56w x 82h — significantly larger than before
+  const sw=56,sh=82,sx=-sw/2,sy=-14;
+  const shg=g.createLinearGradient(sx,sy,sx+sw,sy+sh);
+  shg.addColorStop(0,'#565656');shg.addColorStop(.38,'#9a9a9a');shg.addColorStop(1,'#1e1e1e');
+  g.fillStyle=shg;
+  g.beginPath();
+  g.moveTo(sx+7,sy);g.lineTo(sx+sw-7,sy);
+  g.quadraticCurveTo(sx+sw,sy,sx+sw,sy+18);
+  g.lineTo(sx+sw,sy+sh*.72);
+  g.quadraticCurveTo(sx+sw,sy+sh,sx+sw/2,sy+sh);
+  g.quadraticCurveTo(sx,sy+sh,sx,sy+sh*.72);
+  g.lineTo(sx,sy+18);
+  g.quadraticCurveTo(sx,sy,sx+7,sy);
+  g.closePath();g.fill();
+  g.strokeStyle='#c8a020';g.lineWidth=4.2;g.stroke();
+  // inner bevel
+  g.strokeStyle='rgba(80,60,0,.55)';g.lineWidth=2.5;
+  g.beginPath();g.moveTo(sx+12,sy+6);g.lineTo(sx+sw-12,sy+6);
+  g.lineTo(sx+sw-7,sy+sh*.70);g.lineTo(sx+sw/2,sy+sh-7);
+  g.lineTo(sx+7,sy+sh*.70);g.closePath();g.stroke();
+  // cross
+  g.strokeStyle='rgba(200,160,32,.90)';g.lineWidth=3.8;
+  g.beginPath();g.moveTo(0,sy+9);g.lineTo(0,sy+sh-9);g.stroke();
+  g.beginPath();g.moveTo(sx+9,sy+sh*.38);g.lineTo(sx+sw-9,sy+sh*.38);g.stroke();
+  // boss circle
+  const bsg=g.createRadialGradient(0,sy+sh*.38,0,0,sy+sh*.38,15);
+  bsg.addColorStop(0,'#fff8a0');bsg.addColorStop(.5,'#c8a020');bsg.addColorStop(1,'#5a4010');
+  g.fillStyle=bsg;g.beginPath();g.arc(0,sy+sh*.38,15,0,Math.PI*2);g.fill();
+  g.strokeStyle='#c8a020';g.lineWidth=2.5;g.stroke();
+  g.fillStyle='rgba(255,255,200,.5)';g.beginPath();g.arc(-3,sy+sh*.38-3,5.5,0,Math.PI*2);g.fill();
+  // rivets
+  for(const [rx,ry] of[[-20,10],[20,10],[-21,sh*.72],[21,sh*.72],[0,5],[0,sh-8]]){
+    g.fillStyle='#c8a020';g.beginPath();g.arc(rx,sy+ry,3.8,0,Math.PI*2);g.fill();
+    g.fillStyle='rgba(255,255,180,.55)';g.beginPath();g.arc(rx-1,sy+ry-1,1.5,0,Math.PI*2);g.fill();
+  }
+  // highlight sheen
+  g.fillStyle='rgba(255,255,255,.07)';
+  g.beginPath();g.moveTo(sx+6,sy+6);g.lineTo(0,sy+6);g.lineTo(-5,sy+sh*.33);g.lineTo(sx+6,sy+sh*.25);g.closePath();g.fill();
+  g.restore();
+}
+
+// ─── SPEAR ────────────────────────────────────────────────────
+function drawSpear(){
+  // Uses FK bone positions: spearBase → spearMid → spearTip
+  const b0x=J.rHand.wx,b0y=J.rHand.wy;
+  const b1x=J.spearBase.wx,b1y=J.spearBase.wy;
+  const b2x=J.spearMid.wx,b2y=J.spearMid.wy;
+  const b3x=J.spearTip.wx,b3y=J.spearTip.wy;
+
+  // SHAFT lower half (rHand → spearBase)
+  drawShaftSegment(b0x,b0y,b1x,b1y,6,5.5);
+  // gold band at junction
+  drawGoldBand(b1x,b1y,Math.atan2(b2y-b1y,b2x-b1x),6,8);
+
+  // SHAFT upper half (spearBase → spearMid)
+  drawShaftSegment(b1x,b1y,b2x,b2y,5.5,5);
+  // additional gold bands
+  const t1=.35,t2=.68;
+  drawGoldBand(b1x+(b2x-b1x)*t1,b1y+(b2y-b1y)*t1,Math.atan2(b2y-b1y,b2x-b1x),5.5,7);
+  drawGoldBand(b1x+(b2x-b1x)*t2,b1y+(b2y-b1y)*t2,Math.atan2(b2y-b1y,b2x-b1x),5.2,7);
+
+  // Shaft upper continuation (spearMid → spearTip direction, extended)
+  drawShaftSegment(b2x,b2y,b3x,b3y,5,4.5);
+
+  // SPEAR TIP
+  drawSpearTip(b3x,b3y,Math.atan2(b3y-b2y,b3x-b2x));
+
+  // Butt cap at b0
+  const buttAngle=Math.atan2(b0y-b1y,b0x-b1x);
+  g.save();g.translate(b0x,b0y);g.rotate(buttAngle);
+  g.fillStyle='#c8a020';g.beginPath();g.moveTo(-5,0);g.lineTo(5,0);g.lineTo(3.5,16);g.lineTo(-3.5,16);g.closePath();g.fill();g.restore();
+}
+function drawShaftSegment(ax,ay,bx,by,wA,wB){
+  const stg=g.createLinearGradient(ax,ay,bx,by);
+  stg.addColorStop(0,'#484848');stg.addColorStop(.3,'#b8b8b8');stg.addColorStop(.7,'#888');stg.addColorStop(1,'#2e2e2e');
+  drawSegment(ax,ay,bx,by,wA,wB,
+    sideGrad(ax,ay,bx,by,wA+2),'#1a1a1a',1.5);
+  // edge highlight
+  const dx=bx-ax,dy=by-ay,len=Math.sqrt(dx*dx+dy*dy)||1;
+  const nx=dy/len,ny=-dx/len;
+  g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=1.4;
+  g.beginPath();g.moveTo(ax+nx*(wA*.5),ay+ny*(wA*.5));g.lineTo(bx+nx*(wB*.5),by+ny*(wB*.5));g.stroke();
+}
+function drawGoldBand(cx,cy,angle,w,h){
+  g.save();g.translate(cx,cy);g.rotate(angle);
+  g.fillStyle='#c8a020';g.fillRect(-w,-h/2,w*2,h);
+  g.fillStyle='rgba(255,255,200,.48)';g.fillRect(-w+1,-h/2+1,w*2-2,h/2);
+  g.strokeStyle='rgba(80,60,0,.5)';g.lineWidth=.5;g.strokeRect(-w,-h/2,w*2,h);g.restore();
+}
+function drawSpearTip(tx,ty,angle){
+  g.save();g.translate(tx,ty);g.rotate(angle);
+  // tip extends 56px beyond tip joint — very long blade
+  const tipLen=56;
+  const ttg=g.createLinearGradient(0,0,0,tipLen);
+  ttg.addColorStop(0,'#7a90a0');ttg.addColorStop(.35,'#dde8ff');ttg.addColorStop(.65,'#f0f8ff');ttg.addColorStop(1,'#ffffff');
+  g.fillStyle=ttg;g.shadowBlur=16;g.shadowColor='rgba(200,220,255,.85)';
+  g.beginPath();g.moveTo(0,tipLen);g.lineTo(16,0);g.lineTo(-16,0);g.closePath();g.fill();
+  g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1.2;g.stroke();
+  // highlight on blade
+  g.fillStyle='rgba(255,255,255,.58)';
+  g.beginPath();g.moveTo(0,tipLen);g.lineTo(8,-1);g.lineTo(2,tipLen*.35);g.closePath();g.fill();
+  // blade edge glow
+  g.shadowColor='rgba(180,210,255,.95)';g.shadowBlur=22;
+  g.strokeStyle='rgba(200,230,255,.75)';g.lineWidth=2.4;
+  g.beginPath();g.moveTo(0,tipLen);g.lineTo(0,2);g.stroke();
+  // gold collar
+  g.shadowBlur=0;g.fillStyle='#c8a020';g.fillRect(-9,0,18,10);
+  g.fillStyle='rgba(255,255,200,.52)';g.fillRect(-8,1,16,4);
+  g.restore();
+}
+
+// ─── HELMET ───────────────────────────────────────────────────
+function drawHelmet(){
+  const nWx=J.neck.wx,nWy=J.neck.wy;
+  const hWx=J.head.wx,hWy=J.head.wy;
+  const headAngle=Math.atan2(hWy-nWy,hWx-nWx)+Math.PI/2;
+  g.save();g.translate((nWx+hWx)*.5,(nWy+hWy)*.5);g.rotate(headAngle);
+
+  // NECK guard
+  const ng=g.createLinearGradient(-13,12,13,12);
+  ng.addColorStop(0,'#2a2a2a');ng.addColorStop(.5,'#585858');ng.addColorStop(1,'#222');
+  g.fillStyle=ng;rr(-13,-8,26,22,4);g.fill();g.strokeStyle='#444';g.lineWidth=2;g.stroke();
+  for(let i=0;i<4;i++){g.strokeStyle=`rgba(200,160,32,${.36-i*.08})`;g.lineWidth=1;g.beginPath();g.moveTo(-13,-4+i*5);g.lineTo(13,-4+i*5);g.stroke();}
+
+  // DOME
+  const hg=g.createLinearGradient(-32,-72,32,4);
+  hg.addColorStop(0,'#666');hg.addColorStop(.26,'#b2b2b2');hg.addColorStop(.65,'#666');hg.addColorStop(1,'#2e2e2e');
+  g.fillStyle=hg;
+  g.beginPath();
+  g.moveTo(-32,4);
+  g.bezierCurveTo(-34,-76,-34,-76,-16,-86);
+  g.lineTo(0,-92);g.lineTo(16,-86);
+  g.bezierCurveTo(34,-76,34,-76,32,4);
+  g.closePath();g.fill();
+  g.strokeStyle='#c8a020';g.lineWidth=3;g.stroke();
+  // brow ridge
+  g.strokeStyle='rgba(200,160,32,.7)';g.lineWidth=2.5;
+  g.beginPath();g.moveTo(-32,-36);g.lineTo(32,-36);g.stroke();
+  // dome highlight
+  g.fillStyle='rgba(255,255,255,.05)';
+  g.beginPath();g.moveTo(-20,-88);g.lineTo(20,-88);g.bezierCurveTo(28,-70,28,-50,24,-36);g.bezierCurveTo(18,-28,-18,-28,-24,-36);g.bezierCurveTo(-28,-50,-28,-70,-20,-88);g.closePath();g.fill();
+
+  // CHEEK GUARDS (wider)
+  for(const s of[-1,1]){
+    g.fillStyle='#424242';
+    g.beginPath();g.moveTo(s*32,4);g.lineTo(s*44,10);g.lineTo(s*44,-32);g.lineTo(s*32,-36);g.closePath();
+    g.fill();g.strokeStyle='#c8a020';g.lineWidth=2;g.stroke();
+    for(let r=0;r<5;r++){g.strokeStyle=`rgba(200,160,32,${.46-r*.08})`;g.lineWidth=1;g.beginPath();g.moveTo(s*32,-6-r*8);g.lineTo(s*44,-6-r*8);g.stroke();}
+  }
+
+  // T-VISOR with breathing glow
+  const vb=Math.sin(T*2.1);
+  const vc=`rgba(${~~(185+70*vb)},${~~(28+18*vb)},0,0.95)`;
+  g.fillStyle=vc;g.shadowBlur=20;g.shadowColor=vc;
+  g.fillRect(-26,-56,52,9);   // horizontal bar
+  g.fillRect(-5.5,-68,11,36); // vertical bar
+  const vgrd=g.createLinearGradient(-26,-56,26,-47);
+  vgrd.addColorStop(0,'rgba(255,80,0,0)');vgrd.addColorStop(.5,'rgba(255,160,0,1)');vgrd.addColorStop(1,'rgba(255,80,0,0)');
+  g.fillStyle=vgrd;g.fillRect(-26,-56,52,9);g.shadowBlur=0;
+
+  // PLUME (26 strands)
+  for(let p=0;p<26;p++){
+    const ang=-Math.PI*.5+(p/25-.5)*Math.PI*1.12+Math.sin(T*1.5+p*.32)*.12;
+    const len=34+Math.sin(p/25*Math.PI)*30;
+    const px=Math.cos(ang)*len,py=-90+Math.sin(ang)*len;
+    const r=~~(168+p*4),gr=~~(p*10);
+    g.strokeStyle=`rgba(${r},${gr},0,${.58+p/25*.42})`;
+    g.lineWidth=3.5-p*.07;g.shadowBlur=7;g.shadowColor='rgba(255,40,0,.58)';
+    g.beginPath();g.moveTo(0,-90);g.quadraticCurveTo(px*.24,-102,px,py);g.stroke();
+  }
+  g.shadowBlur=0;
+  g.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GHOST AFTERIMAGES
+// ═══════════════════════════════════════════════════════════════
+function drawGhosts(){
+  for(let i=GHOSTS.length-1;i>=0;i--){
+    const gh=GHOSTS[i];gh.life-=dt;if(gh.life<=0){GHOSTS.splice(i,1);continue;}
+    const a=gh.life/gh.ml*.52;
+    g.save();g.globalAlpha=a;g.shadowBlur=28;g.shadowColor='rgba(0,180,255,.9)';g.fillStyle='rgba(28,140,255,.78)';
+    // Draw simplified skeleton silhouette using snapshotted positions
+    const lw=3;
+    g.lineWidth=lw;g.strokeStyle=`rgba(60,180,255,${a})`;
+    function ghostLine(x1,y1,x2,y2){g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();}
+    // torso
+    ghostLine(gh.pWx,gh.pWy,gh.sHx,gh.sHy);
+    // head
+    g.beginPath();g.arc(gh.hx,gh.hy,18,0,Math.PI*2);g.fill();
+    // left arm
+    ghostLine(gh.sHx,gh.sHy,gh.lHx,gh.lHy);
+    // right arm + spear
+    ghostLine(gh.sHx,gh.sHy,gh.rHx,gh.rHy);
+    ghostLine(gh.rHx,gh.rHy,gh.sTx,gh.sTy);
+    // left leg
+    ghostLine(gh.pWx,gh.pWy,gh.lKx,gh.lKy);
+    ghostLine(gh.lKx,gh.lKy,gh.lFx,gh.lFy);
+    // right leg
+    ghostLine(gh.pWx,gh.pWy,gh.rKx,gh.rKy);
+    ghostLine(gh.rKx,gh.rKy,gh.rFx,gh.rFy);
+    // shield blob
+    g.beginPath();g.ellipse(gh.lHx,gh.lHy,22,30,0,0,Math.PI*2);g.fill();
+    g.shadowBlur=0;g.restore();
+  }
+  g.globalAlpha=1;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SWEEP ARC
+// ═══════════════════════════════════════════════════════════════
+function drawSweepArc(){
+  if(!SWEEPARC)return;SWEEPARC.life-=dt;if(SWEEPARC.life<=0){SWEEPARC=null;return;}
+  const a=SWEEPARC.life/SWEEPARC.ml;
+  const curEnd=SWEEPARC.startA+(SWEEPARC.endA-SWEEPARC.startA)*Math.min(1,SWEEPARC.prog);
+  for(let i=0;i<26;i++){
+    const fi=i/26,fa=Math.max(0,(1-fi)*a*.92);
+    const sa=SWEEPARC.startA+(curEnd-SWEEPARC.startA)*fi;
+    const ea=SWEEPARC.startA+(curEnd-SWEEPARC.startA)*(fi+.050);
+    g.strokeStyle=`rgba(255,${~~(200-fi*55)},0,${fa})`;
+    g.lineWidth=(26-i*.58)*a;g.shadowBlur=24;g.shadowColor='rgba(255,180,0,.9)';
+    g.beginPath();g.arc(SWEEPARC.cx,SWEEPARC.cy,SWEEPARC.r,sa,ea);g.stroke();
+  }
+  g.shadowBlur=0;
+  if(Math.random()<.72){const ang=curEnd;P(SWEEPARC.cx+Math.cos(ang)*SWEEPARC.r,SWEEPARC.cy+Math.sin(ang)*SWEEPARC.r,(Math.random()-.5)*7,(-Math.random()*7-2),290+Math.random()*360,2+Math.random()*4,'#ffcc00','rgba(255,200,0,.9)',.1);}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HEAL MAGIC CIRCLE
+// ═══════════════════════════════════════════════════════════════
+function drawHealMagic(){
+  if(!HEALMAGIC||!HEALMAGIC.on)return;
+  const cx=KN.worldX,cy=KN.worldY;
+  const a=Math.min(1,HEALMAGIC.life/500);
+  const r1=62,r2=90,r3=115;
+  g.save();g.globalAlpha=a;g.shadowBlur=36;g.shadowColor='rgba(0,255,80,.9)';
+  g.strokeStyle=`rgba(0,255,100,${a*.8})`;g.lineWidth=3.5;
+  g.beginPath();g.arc(cx,cy,r3,0,Math.PI*2);g.stroke();
+  g.beginPath();g.arc(cx,cy,r1,0,Math.PI*2);g.stroke();
+  g.save();g.translate(cx,cy);g.rotate(HEALMAGIC.angle*.52);
+  for(let i=0;i<16;i++){const ra=(i/16)*Math.PI*2;g.save();g.translate(Math.cos(ra)*r2,Math.sin(ra)*r2);g.rotate(ra+HEALMAGIC.angle);g.strokeStyle=`rgba(0,245,105,${a*.94})`;g.lineWidth=2.2;g.shadowBlur=12;g.shadowColor='rgba(0,255,80,.85)';g.beginPath();g.moveTo(-6,0);g.lineTo(6,0);g.stroke();g.beginPath();g.moveTo(0,-9);g.lineTo(0,9);g.stroke();g.beginPath();g.moveTo(-5,-5);g.lineTo(5,5);g.stroke();g.restore();}
+  g.restore();
+  g.save();g.translate(cx,cy);g.rotate(-HEALMAGIC.angle*.82);
+  g.strokeStyle=`rgba(0,255,80,${a*.9})`;g.lineWidth=2.6;g.shadowBlur=20;g.shadowColor='rgba(0,255,100,.92)';
+  for(let i=0;i<6;i++){g.beginPath();g.moveTo(Math.cos(i/6*Math.PI*2)*r1,Math.sin(i/6*Math.PI*2)*r1);g.lineTo(Math.cos((i+2)/6*Math.PI*2)*r1,Math.sin((i+2)/6*Math.PI*2)*r1);g.stroke();}
+  g.restore();
+  g.save();g.translate(cx,cy);g.rotate(HEALMAGIC.angle*1.30);
+  g.strokeStyle=`rgba(160,255,160,${a*.70})`;g.lineWidth=2.2;
+  g.beginPath();for(let i=0;i<5;i++){const ang=(i/5)*Math.PI*2-Math.PI/2;i===0?g.moveTo(Math.cos(ang)*r1*.52,Math.sin(ang)*r1*.52):g.lineTo(Math.cos(ang)*r1*.52,Math.sin(ang)*r1*.52);}
+  g.closePath();g.stroke();g.restore();
+  for(let i=0;i<32;i++){const ang=(i/32)*Math.PI*2+HEALMAGIC.angle*.36;g.strokeStyle=`rgba(0,255,80,${a*(.20+.18*Math.sin(ang*3+T*4))})`;g.lineWidth=1;g.beginPath();g.moveTo(cx+Math.cos(ang)*r1,cy+Math.sin(ang)*r1);g.lineTo(cx+Math.cos(ang)*r3,cy+Math.sin(ang)*r3);g.stroke();}
+  const cg2=g.createRadialGradient(cx,cy,0,cx,cy,r1);cg2.addColorStop(0,`rgba(0,255,80,${a*.25})`);cg2.addColorStop(1,'rgba(0,255,80,0)');
+  g.fillStyle=cg2;g.beginPath();g.arc(cx,cy,r1,0,Math.PI*2);g.fill();
+  g.shadowBlur=0;g.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GROUND FX
+// ═══════════════════════════════════════════════════════════════
+function drawGroundFX(){
+  for(let i=CRACKS.length-1;i>=0;i--){
+    const c=CRACKS[i];c.life-=dt;if(c.life<=0){CRACKS.splice(i,1);continue;}
+    const a=Math.min(1,c.life/c.ml*3);
+    g.shadowBlur=18;g.shadowColor=`rgba(255,100,0,${a*.85})`;g.strokeStyle=`rgba(14,7,0,${a})`;g.lineWidth=c.w*a;
+    g.beginPath();g.moveTo(c.pts[0].x,c.pts[0].y);for(let p=1;p<c.pts.length;p++)g.lineTo(c.pts[p].x,c.pts[p].y);g.stroke();
+    g.strokeStyle=`rgba(255,${~~(80+52*Math.sin(T*3))},0,${a*.72})`;g.lineWidth=c.w*a*.46;g.shadowColor=`rgba(255,80,0,${a})`;g.shadowBlur=24;
+    g.beginPath();g.moveTo(c.pts[0].x,c.pts[0].y);for(let p=1;p<c.pts.length;p++)g.lineTo(c.pts[p].x,c.pts[p].y);g.stroke();g.shadowBlur=0;
+  }
+  for(let i=WAVES.length-1;i>=0;i--){
+    const w=WAVES[i];w.life-=dt;if(w.life<=0){WAVES.splice(i,1);continue;}
+    const a=w.life/w.ml;w.r=w.maxR*(1-a);
+    g.strokeStyle=w.col+(a*.86)+')';g.lineWidth=5.5*a;g.shadowBlur=26;g.shadowColor=w.col+'0.9)';
+    g.beginPath();g.arc(w.x,w.y,w.r,0,Math.PI*2);g.stroke();g.shadowBlur=0;
+  }
+  if(WARN){WARN.life-=dt;if(WARN.life<=0){WARN=null;}else{
+    const a=Math.abs(Math.sin(T*12))*(WARN.life/WARN.ml);
+    g.strokeStyle=`rgba(255,0,0,${a})`;g.lineWidth=5;g.shadowBlur=28;g.shadowColor='rgba(255,0,0,.9)';
+    g.setLineDash([14,8]);g.beginPath();g.arc(WARN.x,WARN.y,WARN.r,0,Math.PI*2);g.stroke();g.setLineDash([]);
+    g.strokeStyle=`rgba(255,60,0,${a*.74})`;g.lineWidth=2.4;
+    g.beginPath();g.moveTo(WARN.x-WARN.r,WARN.y);g.lineTo(WARN.x+WARN.r,WARN.y);g.stroke();
+    g.beginPath();g.moveTo(WARN.x,WARN.y-WARN.r);g.lineTo(WARN.x,WARN.y+WARN.r);g.stroke();g.shadowBlur=0;}}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// METEOR FX
+// ═══════════════════════════════════════════════════════════════
+function drawMeteorFX(){
+  if(!METEOR||!METEOR.on)return;
+  const mg=g.createRadialGradient(METEOR.x,METEOR.y,3,METEOR.x,METEOR.y,38);
+  mg.addColorStop(0,'#fff');mg.addColorStop(.2,'#ffcc00');mg.addColorStop(.6,'#ff4400');mg.addColorStop(1,'rgba(100,0,0,0)');
+  g.shadowBlur=75;g.shadowColor='rgba(255,100,0,.9)';
+  g.fillStyle=mg;g.beginPath();g.arc(METEOR.x,METEOR.y,38,0,Math.PI*2);g.fill();
+  g.fillStyle='#fff';g.beginPath();g.arc(METEOR.x,METEOR.y,13,0,Math.PI*2);g.fill();g.shadowBlur=0;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// THRUST FLASH
+// ═══════════════════════════════════════════════════════════════
+function drawThrustFlash(){
+  if(!TFLASH)return;TFLASH.life-=dt;if(TFLASH.life<=0){TFLASH=null;return;}
+  const a=TFLASH.life/TFLASH.ml;TFLASH.r=84*(1-a);
+  g.strokeStyle=`rgba(255,255,255,${a*.9})`;g.lineWidth=6.5*a;g.shadowBlur=32;g.shadowColor='rgba(200,230,255,.9)';
+  g.beginPath();g.arc(TFLASH.x,TFLASH.y,TFLASH.r,0,Math.PI*2);g.stroke();g.shadowBlur=0;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PARTICLES + ORBS
+// ═══════════════════════════════════════════════════════════════
+function drawParticles(){
+  for(let i=PARTS.length-1;i>=0;i--){
+    const p=PARTS[i];p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);p.vy+=p.grav*(dt/16);p.life-=dt;
+    if(p.life<=0){PARTS.splice(i,1);continue;}
+    const a=p.life/p.ml;g.globalAlpha=a;if(p.glow){g.shadowBlur=13;g.shadowColor=p.glow;}
+    g.fillStyle=p.col;g.beginPath();g.arc(p.x,p.y,p.r*a+.3,0,Math.PI*2);g.fill();g.shadowBlur=0;
+  }g.globalAlpha=1;
+}
+function drawOrbs(){
+  for(let i=ORBS.length-1;i>=0;i--){
+    const o=ORBS[i];o.x+=o.vx*(dt/16);o.y+=o.vy*(dt/16);o.x+=Math.sin(T*3+i)*.5;o.life-=dt;
+    if(o.life<=0){ORBS.splice(i,1);continue;}
+    const a=o.life/o.ml;g.globalAlpha=a;g.fillStyle='rgba(0,255,120,1)';g.shadowBlur=17;g.shadowColor='rgba(0,255,80,.9)';
+    g.beginPath();g.arc(o.x,o.y,o.r,0,Math.PI*2);g.fill();g.shadowBlur=0;
+  }g.globalAlpha=1;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN LOOP
+// ═══════════════════════════════════════════════════════════════
+let inited=false;
+function loop(now){
+  requestAnimationFrame(loop);
+  dt=Math.min(50,now-last);last=now;T+=dt/1000;
+  if(!inited){KN.worldX=W/2;KN.worldY=GY;inited=true;}
+  updateCD();updateKnight();updateShake();
+  g.save();g.translate(SK.x,SK.y);
+  drawBG();drawGround();
+  drawHealMagic();
+  drawGroundFX();
+  drawSweepArc();
+  drawGhosts();
+  drawMeteorFX();
+  if(KN.visible&&KN.worldY>-190) drawKnight();
+  drawThrustFlash();
+  drawParticles();
+  drawOrbs();
+  g.restore();
+}
 requestAnimationFrame(loop);
-
-setInterval(()=>{
-    const keys = ["dash","sweep","thrust","meteor","heal"];
-    const k = keys[Math.floor(Math.random()*keys.length)];
-
-    if(cooldowns[k].t<=0){
-        triggerSkill(k);
-    }
-},5000);
 
 </script>
 </body>
